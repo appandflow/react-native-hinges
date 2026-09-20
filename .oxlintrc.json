@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import", "node", "promise", "react", "jsx-a11y", "jest"],
+  "options": {
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "env": {
+    "builtin": true,
+    "node": true,
+    "es2023": true
+  },
+  "ignorePatterns": ["lib/**", "website/build/**", "website/.docusaurus/**", "example/ios/Pods/**", "**/build/**"],
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "import/no-duplicates": "error",
+    "node/no-exports-assign": "error",
+    "promise/no-return-in-finally": "error",
+    "react/react-in-jsx-scope": "off"
+  }
+}

@@ -1,0 +1,11 @@
+packages:
+  - example
+  - website
+
+nodeLinker: hoisted
+linkWorkspacePackages: true
+minimumReleaseAge: 1440
+allowBuilds:
+  core-js: false
+  esbuild: false
+  unrs-resolver: false

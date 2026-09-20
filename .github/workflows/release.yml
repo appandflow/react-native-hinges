@@ -1,0 +1,54 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - name: Validate tag and release notes
+        run: |
+          git merge-base --is-ancestor HEAD origin/main
+          node scripts/check-release.mjs "$GITHUB_REF_NAME"
+      - run: pnpm run build
+      - name: Pack and inspect
+        run: |
+          pnpm pack --pack-destination artifacts
+          node scripts/check-package.mjs artifacts/*.tgz
+      - name: Publish with npm trusted publishing
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          dist_tag=latest
+          if [[ "$version" == *-* ]]; then dist_tag=next; fi
+          if npm view "react-native-hinges@$version" version --json > "$RUNNER_TEMP/registry.json" 2> "$RUNNER_TEMP/registry-error.txt"; then
+            echo "Version already exists; verifying without republishing."
+          else
+            node -e 'const r=require(process.argv[1]); if(r.error?.code!=="E404") process.exit(1)' "$RUNNER_TEMP/registry.json"
+            npm publish "artifacts/react-native-hinges-$version.tgz" --provenance --access public --tag "$dist_tag"
+          fi
+          for attempt in {1..12}; do
+            if npm view "react-native-hinges@$version" version --json > "$RUNNER_TEMP/version.json" &&
+              npm view react-native-hinges "dist-tags.$dist_tag" --json > "$RUNNER_TEMP/dist-tag.json" &&
+              node -e 'const fs=require("node:fs"); const [a,b,v]=process.argv.slice(1); process.exit(JSON.parse(fs.readFileSync(a))===v && JSON.parse(fs.readFileSync(b))===v ? 0 : 1)' "$RUNNER_TEMP/version.json" "$RUNNER_TEMP/dist-tag.json" "$version"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Registry verification failed."
+          exit 1

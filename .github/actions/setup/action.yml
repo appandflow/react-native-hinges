@@ -1,0 +1,15 @@
+name: Setup
+description: Install Node and the pinned pnpm workspace
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      with:
+        node-version-file: .nvmrc
+        package-manager-cache: false
+    - uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2.0.2
+      with:
+        cache: false
+        install: false
+    - run: pnpm install --frozen-lockfile
+      shell: bash

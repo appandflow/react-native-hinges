@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "printWidth": 120,
+  "ignorePatterns": [
+    "lib/**",
+    "**/node_modules/**",
+    "website/build/**",
+    "website/.docusaurus/**",
+    "**/build/**",
+    "example/ios/Pods/**",
+    "example/vendor/**",
+    "pnpm-lock.yaml"
+  ]
+}

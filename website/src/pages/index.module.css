@@ -1,0 +1,366 @@
+.hero,
+.concepts,
+.codeSection,
+.exampleSection {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.hero {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 64px;
+  align-items: center;
+  padding: 100px 32px 90px;
+}
+.eyebrow {
+  color: var(--ifm-color-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 20px;
+}
+.hero h1 {
+  font-size: clamp(2.5rem, 4.1vw, 3.65rem);
+  line-height: 1.12;
+  letter-spacing: -0.06em;
+  margin-bottom: 25px;
+}
+.hero h1 span {
+  color: var(--ifm-color-primary);
+}
+.intro {
+  color: var(--rr-muted);
+  font-size: 1.1rem;
+  max-width: 480px;
+  line-height: 1.75;
+}
+.actions {
+  display: flex;
+  gap: 25px;
+  align-items: center;
+  margin-top: 30px;
+}
+.referenceLink {
+  color: var(--ifm-font-color-base);
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+.packageName {
+  margin-top: 24px;
+  font: 0.78rem var(--ifm-font-family-monospace);
+  color: var(--rr-muted);
+  overflow-wrap: anywhere;
+}
+.preview {
+  margin: 0;
+  min-width: 0;
+  border: 1px solid var(--rr-border);
+  border-radius: 16px;
+  background: var(--rr-panel);
+  box-shadow: 0 16px 60px #172d5810;
+}
+.previewHeader {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 17px 20px;
+  font: 0.65rem var(--ifm-font-family-monospace);
+  letter-spacing: 0.07em;
+  color: var(--rr-muted);
+  border-bottom: 1px solid var(--rr-border);
+}
+.liveDot {
+  width: 6px;
+  height: 6px;
+  background: #315de0;
+  border-radius: 50%;
+}
+.previewUnit {
+  margin-left: auto;
+}
+.device {
+  margin: 25px;
+  padding: 13px;
+  border: 2px solid var(--rr-border);
+  border-radius: 23px;
+  background: var(--ifm-background-color);
+}
+.provider {
+  height: 262px;
+  border: 1.5px solid #527ef0;
+  border-radius: 12px;
+  position: relative;
+  background-image: radial-gradient(var(--rr-border) 0.7px, transparent 0.7px);
+  background-size: 12px 12px;
+}
+.origin {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font: 0.61rem var(--ifm-font-family-monospace);
+  color: var(--ifm-color-primary);
+}
+.panes {
+  position: absolute;
+  inset: 65px 18px 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 42px;
+}
+.pane {
+  min-width: 0;
+}
+.stubTitle {
+  background: var(--rr-border);
+  height: 9px;
+  width: 65%;
+  margin-bottom: 14px;
+  border-radius: 3px;
+}
+.stub {
+  height: 5px;
+  margin-bottom: 8px;
+  background: var(--rr-subtle);
+  border-radius: 3px;
+}
+.tile {
+  height: 75px;
+  background: var(--rr-subtle);
+  border-radius: 8px;
+  margin: 15px 0;
+}
+.fold {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 2px solid #d57839;
+  background: #d5783915;
+}
+.fold span {
+  position: absolute;
+  top: 106px;
+  left: 0;
+  transform: translateX(-50%);
+  background: #fff4e9;
+  border: 1px solid #e8b992;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font: 0.62rem var(--ifm-font-family-monospace);
+  color: #8a4516;
+}
+.angleTag {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: #f2eaff;
+  border: 1px solid #d0b8ef;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font: 0.62rem var(--ifm-font-family-monospace);
+  color: #6936a7;
+}
+.previewCaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 0 25px 20px;
+  font-size: 0.65rem;
+  color: var(--rr-muted);
+  align-items: center;
+}
+.previewCaption span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.previewCaption i {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+}
+.previewCaption small {
+  width: 100%;
+  font-size: 0.6rem;
+  margin-top: 2px;
+}
+.providerKey {
+  background: #527ef0;
+}
+.postureKey {
+  background: #d57839;
+}
+.angleKey {
+  background: #7f4fc8;
+}
+.concepts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+  padding: 44px 32px 66px;
+  border-top: 1px solid var(--rr-border);
+}
+.number {
+  font: 0.67rem var(--ifm-font-family-monospace);
+  letter-spacing: 0.06em;
+  color: var(--rr-muted);
+}
+.concepts h2 {
+  font-size: 1.25rem;
+  letter-spacing: -0.035em;
+  margin: 17px 0 12px;
+}
+.concepts p,
+.codeSection p,
+.exampleSection p {
+  color: var(--rr-muted);
+  font-size: 0.96rem;
+}
+.concepts a,
+.codeSection a {
+  font-size: 0.87rem;
+  font-weight: 600;
+}
+.codeSection {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  align-items: center;
+  gap: 72px;
+  padding: 65px 32px 85px;
+  border-top: 1px solid var(--rr-border);
+}
+.codeSection h2,
+.exampleSection h2 {
+  font-size: 2rem;
+  letter-spacing: -0.045em;
+}
+.codeSection > div {
+  min-width: 0;
+}
+.codeSection pre {
+  font-size: 0.79rem;
+}
+.codeSection .eyebrow,
+.exampleSection .eyebrow {
+  color: var(--ifm-color-primary);
+  font-size: 0.72rem;
+}
+.exampleSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  margin-bottom: 72px;
+  padding: 35px 40px;
+  border: 1px solid var(--rr-border);
+  border-radius: 12px;
+  background: var(--rr-panel);
+}
+.exampleSection p {
+  max-width: 620px;
+  margin-bottom: 0;
+}
+.exampleSection .eyebrow {
+  margin-bottom: 12px;
+}
+.exampleSection a {
+  flex-shrink: 0;
+}
+@media (max-width: 1200px) {
+  .exampleSection {
+    margin-left: 32px;
+    margin-right: 32px;
+  }
+}
+@media (max-width: 996px) {
+  .hero {
+    gap: 30px;
+    padding-top: 65px;
+  }
+  .actions {
+    gap: 18px;
+  }
+  .hero h1 {
+    font-size: 2.8rem;
+  }
+  .referenceLink {
+    font-size: 0.82rem;
+  }
+  .device {
+    margin: 20px;
+  }
+  .concepts {
+    gap: 25px;
+  }
+  .codeSection {
+    gap: 36px;
+  }
+}
+@media (max-width: 760px) {
+  .hero,
+  .codeSection {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    padding: 48px 24px;
+    gap: 38px;
+  }
+  .hero h1 {
+    font-size: clamp(2.4rem, 8.7vw, 3.5rem);
+  }
+  .intro {
+    font-size: 1rem;
+  }
+  .preview {
+    max-width: 520px;
+    width: 100%;
+  }
+  .concepts {
+    grid-template-columns: 1fr;
+    padding: 36px 24px;
+    gap: 32px;
+  }
+  .concepts article {
+    max-width: 500px;
+  }
+  .concepts h2 {
+    margin-top: 10px;
+  }
+  .codeSection {
+    padding: 40px 24px;
+    gap: 20px;
+  }
+  .exampleSection {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px;
+    margin: 0 24px 44px;
+    gap: 22px;
+  }
+  .exampleSection h2,
+  .codeSection h2 {
+    font-size: 1.7rem;
+  }
+}
+@media (max-width: 380px) {
+  .actions {
+    gap: 14px;
+  }
+  .actions :global(.button) {
+    font-size: 0.9rem;
+    padding: 12px 16px;
+  }
+  .device {
+    margin: 15px;
+    padding: 10px;
+  }
+  .previewCaption {
+    padding-left: 20px;
+  }
+  .panes {
+    gap: 30px;
+  }
+  .referenceLink {
+    font-size: 0.76rem;
+  }
+}

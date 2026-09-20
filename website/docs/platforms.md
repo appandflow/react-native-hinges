@@ -32,7 +32,7 @@ Use an Xcode and simulator runtime that include iPhone Duo when testing that dev
 
 ## Android
 
-The provider observes Jetpack WindowManager folding features for posture and the optional `TYPE_HINGE_ANGLE` sensor for angle.
+The provider observes Jetpack WindowManager folding features for its Activity window and, on API 30 or later, the optional device-level `TYPE_HINGE_ANGLE` sensor for angle. The combined snapshot is associated with that provider's hierarchy; the two native sources do not have identical scope.
 
 | WindowManager state   | Public status   |
 | --------------------- | --------------- |
@@ -43,6 +43,8 @@ The provider observes Jetpack WindowManager folding features for posture and the
 The library does not infer `closed` from the angle. Every reported folding feature can contribute hinge state, including a flat feature that does not separate the display.
 
 Android sensor readings use degrees; the library converts them to radians. An angle is attached only when there is exactly one hinge-angle sensor and at most one folding feature. With multiple folding features, each angle remains `null` because there is no reliable feature-to-sensor association. If only the sensor is available, the hinge has status `unknown`.
+
+The current Android registration requests `SENSOR_DELAY_NORMAL`. The effective delivery cadence depends on the sensor and operating system; this is not a promised update rate. There is no public sampling-rate option.
 
 A supported device can report posture without angle readings. Sensor and WindowManager availability depend on the device, emulator profile, and platform implementation.
 

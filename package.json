@@ -9,13 +9,13 @@
     "ios",
     "react-native"
   ],
-  "homepage": "https://github.com/AppAndFlow/react-native-hinges#readme",
-  "bugs": "https://github.com/AppAndFlow/react-native-hinges/issues",
+  "homepage": "https://github.com/appandflow/react-native-hinges#readme",
+  "bugs": "https://github.com/appandflow/react-native-hinges/issues",
   "license": "MIT",
   "author": "Janic Duplessis <janicduplessis@gmail.com> (https://github.com/janicduplessis)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AppAndFlow/react-native-hinges.git"
+    "url": "git+https://github.com/appandflow/react-native-hinges.git"
   },
   "files": [
     "src",
@@ -44,7 +44,12 @@
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./reanimated": {
+      "react-native-hinges-source": "./src/reanimated.tsx",
+      "types": "./lib/typescript/src/reanimated.d.ts",
+      "default": "./lib/module/reanimated.js"
+    }
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
@@ -76,12 +81,24 @@
     "react": "19.3.0",
     "react-native": "0.88.0-rc.1",
     "react-native-builder-bob": "^0.43.1",
+    "react-native-reanimated": "4.7.0",
+    "react-native-worklets": "0.13.0",
     "react-test-renderer": "19.3.0",
     "typescript": "7.0.2"
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*"
+    "react-native": "*",
+    "react-native-reanimated": "^4.7.0",
+    "react-native-worklets": "^0.13.0"
+  },
+  "peerDependenciesMeta": {
+    "react-native-reanimated": {
+      "optional": true
+    },
+    "react-native-worklets": {
+      "optional": true
+    }
   },
   "jest": {
     "modulePathIgnorePatterns": [

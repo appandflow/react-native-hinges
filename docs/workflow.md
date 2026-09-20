@@ -77,6 +77,21 @@ Android degrees to public radians. Verify hook and non-React observer updates,
 provider unmount cleanup, and independent observers. Multiple-hinge mappings
 require a suitable device; unit coverage is not hardware verification.
 
+For the optional Reanimated path, keep Native and simulated Preview results
+separate. Confirm a fixed-angle cold launch, a changing native angle under
+`AnimatedHingeProvider`, and ordinary hook/observer updates alongside the shared
+value. During a JS-stall check, continue supplying native angle changes; a
+self-running preview animation does not establish sensor delivery. The retained
+shared value currently keeps its last snapshot after unmount, while the ordinary
+observer clears.
+
+Treat event-rate samples as distinct changed-value deliveries for that input
+sequence. Record actual elapsed time and gaps; do not equate them with rendered
+frames or physical sampling frequency. The
+[initial Android emulator report](verification/android-emulator-2026-09-20.md)
+records the known method and limitations. Rerun affected behavior for the exact
+release candidate if the implementation changes.
+
 Use the device ID reported by Stim for app automation and screenshots. Some Duo
 capture tools default to the inactive display; enumerate displays with
 `xcrun simctl io <udid> enumerate` and choose the active display explicitly.

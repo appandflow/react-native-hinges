@@ -3,7 +3,7 @@ title: API reference
 description: Providers, hooks, observers, and documented hinge types.
 ---
 
-All public exports come from `react-native-hinges`.
+Core exports come from `react-native-hinges`. The optional animated exports come from `react-native-hinges/reanimated`.
 
 ## HingeProvider
 
@@ -13,10 +13,12 @@ type HingeProviderProps = ViewProps & {
   observer?: HingeObserver;
 };
 
-function HingeProvider(props: HingeProviderProps): React.JSX.Element;
+const HingeProvider: React.ForwardRefExoticComponent<
+  React.PropsWithoutRef<HingeProviderProps> & React.RefAttributes<React.ComponentRef<typeof View>>
+>;
 ```
 
-A native view providing hinge state to its descendants. Accepts React Native `ViewProps`. Pass an observer created by `createHingeObserver()` to share snapshots with non-React code, or omit it to use an internal observer.
+A native view providing hinge state to its descendants. UIKit observation is attached to this view hierarchy; Android posture is associated with its Activity window, while angle readings come from the device sensor. Its bounds do not clip hinge state. Accepts React Native `ViewProps`. Pass an observer created by `createHingeObserver()` to share snapshots with non-React code, or omit it to use an internal observer.
 
 ## HingeStatus
 
@@ -72,3 +74,23 @@ function createHingeObserver(): HingeObserver;
 Creates an observer for one provider. Pass it through that provider's `observer` prop. It has no native source until attached, and its snapshot is cleared when the provider unmounts.
 
 See [observer usage](./observers.md) and [platform behavior](./platforms.md).
+
+## AnimatedHingeProvider
+
+Import from `react-native-hinges/reanimated`. Requires the optional Reanimated and Worklets peers.
+
+```ts
+function AnimatedHingeProvider(props: HingeProviderProps): React.JSX.Element;
+```
+
+Provides a UI-runtime shared value and the ordinary hook/observer interfaces for the same hierarchy. Use it in place of `HingeProvider` for animated consumers.
+
+## useAnimatedHinges
+
+```ts
+function useAnimatedHinges(): SharedValue<readonly Hinge[]>;
+```
+
+Returns the nearest animated provider's shared value, initially `[]`. Throws outside that provider. Read with `get()` inside worklets and do not mutate it. Angles remain raw radians or `null`; no sampling interval or smoothing is imposed.
+
+A retained shared value currently keeps its last snapshot after provider unmount. This differs from the ordinary observer, which clears. See [Reanimated integration](./reanimated.md) for setup, lifetime, and validation limits.

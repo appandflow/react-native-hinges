@@ -2,7 +2,8 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-hinges": ["./src/index"]
+      "react-native-hinges": ["./src/index"],
+      "react-native-hinges/reanimated": ["./src/reanimated"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

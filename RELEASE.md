@@ -4,6 +4,33 @@ This repository publishes one package, `react-native-hinges`. The
 example and documentation site are private. Keep this document aligned with
 [the Release workflow](.github/workflows/release.yml).
 
+## First functional alpha readiness
+
+Current status: `0.1.0-alpha.0` on npm is a name-reservation placeholder. No
+functional version has been published. `0.1.0-alpha.1` is the candidate described
+in [the draft notes](docs/releases/0.1.0-alpha.1.md).
+
+Before tagging that candidate:
+
+- [ ] Final API and optional Reanimated entry point reviewed and merged.
+- [ ] All required CI passes on the exact candidate commit, including native builds.
+- [ ] Packed root and `/reanimated` imports/declarations verified; the core import
+      works without installing the optional Reanimated and Worklets peers.
+- [ ] Runtime evidence and unavailable checks recorded in the candidate notes.
+      Keep simulated preview, simulator-native events, and physical-device results
+      distinct. Record the SDK and runtime for iOS verification.
+- [ ] npm trusted publishing configured and verified for this exact repository,
+      workflow, and environment. This setup is currently pending verification.
+- [ ] GitHub `release` environment approval/tag restrictions verified in GitHub.
+- [ ] Candidate version, release notes, tarball contents, and dist-tag reviewed.
+- [ ] Functional publish and registry integrity/dist-tag verified after the
+      authorized tag is pushed. A successful source build is not a publish.
+- [ ] Launch links checked. Docusaurus is currently local only; use repository
+      links until a documentation deployment has been completed and checked.
+
+Use [docs/launch.md](docs/launch.md) for the draft announcement and video plan.
+It does not authorize posting or claim that a release has happened.
+
 ## One-time trusted-publisher setup
 
 The package already exists on npm. In its npm settings, configure GitHub Actions:

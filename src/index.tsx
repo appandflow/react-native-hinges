@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { ViewProps } from 'react-native';
+import type { View, ViewProps } from 'react-native';
 import {
   createHingeObserver,
   updateHingeObserver,
@@ -20,11 +20,12 @@ export type HingeProviderProps = ViewProps & {
 };
 
 /** Observes hinges for this view hierarchy; its bounds do not clip hinge state. */
-export function HingeProvider({
-  children,
-  observer: suppliedObserver,
-  ...props
-}: HingeProviderProps): React.JSX.Element {
+export const HingeProvider: React.ForwardRefExoticComponent<
+  React.PropsWithoutRef<HingeProviderProps> & React.RefAttributes<React.ComponentRef<typeof View>>
+> = React.forwardRef<React.ComponentRef<typeof View>, HingeProviderProps>(function HingeProvider(
+  { children, observer: suppliedObserver, ...props },
+  ref,
+) {
   const [defaultObserver] = React.useState(createHingeObserver);
   const observer = suppliedObserver ?? defaultObserver;
   const latestHinges = React.useRef<readonly Hinge[]>([]);
@@ -36,6 +37,7 @@ export function HingeProvider({
     <HingeContext.Provider value={observer}>
       <HingesView
         {...props}
+        ref={ref}
         onHingesChange={({ nativeEvent: event }) => {
           latestHinges.current = event.hinges.map((hinge) => {
             const status: HingeStatus =
@@ -51,7 +53,7 @@ export function HingeProvider({
       </HingesView>
     </HingeContext.Provider>
   );
-}
+});
 
 /**
  * Returns the hinges reported for the nearest HingeProvider's hierarchy.

@@ -1,1 +1,1 @@
-export default { docs: ['installation', 'usage', 'observers', 'api', 'platforms', 'example'] };
+export default { docs: ['installation', 'usage', 'observers', 'reanimated', 'api', 'platforms', 'example'] };

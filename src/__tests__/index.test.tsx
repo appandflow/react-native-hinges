@@ -4,6 +4,13 @@ import { act, create } from 'react-test-renderer';
 import { HingeProvider, createHingeObserver, useHinges, type Hinge } from '../index';
 import type { HingesChangeEvent } from '../HingesViewNativeComponent';
 
+jest.mock('react-native-reanimated', () => {
+  throw new Error('The core entrypoint must not load Reanimated');
+});
+jest.mock('react-native-worklets', () => {
+  throw new Error('The core entrypoint must not load Worklets');
+});
+
 let mockOnHingesChange: ((event: { nativeEvent: HingesChangeEvent }) => void) | undefined;
 jest.mock('../HingesView', () => ({
   HingesView: ({

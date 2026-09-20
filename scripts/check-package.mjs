@@ -13,11 +13,21 @@ for (const required of [
   'src/index.tsx',
   'lib/module/index.js',
   'lib/typescript/src/index.d.ts',
+  'src/reanimated.tsx',
+  'lib/module/reanimated.js',
+  'lib/typescript/src/reanimated.d.ts',
   'Hinges.podspec',
   'ios/HingesView.mm',
   'android/build.gradle',
 ]) {
   if (!entries.includes(`package/${required}`)) throw new Error(`Missing package file: ${required}`);
+}
+for (const conditions of Object.values(manifest.exports)) {
+  for (const target of typeof conditions === 'string' ? [conditions] : Object.values(conditions)) {
+    if (!entries.includes(`package/${target.replace(/^\.\//, '')}`)) {
+      throw new Error(`Missing export target: ${target}`);
+    }
+  }
 }
 for (const entry of entries) {
   if (/^package\/(?:example|website|node_modules|docs|scripts|artifacts|\.github)\//.test(entry)) {

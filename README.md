@@ -36,6 +36,19 @@ Each hinge has `status: 'unknown' | 'closed' | 'partiallyOpen' | 'fullyOpen'` an
 `angle: number | null` in radians. An empty array means no readings are available
 (including before initialization). Array order is not a persistent identity.
 
+## Why a provider?
+
+The combined API needs a native observation scope. Apple's `UIHingeInteraction`
+attaches to a view and reports the hinge associated with its hierarchy. Android
+WindowManager reports folding posture for an Activity window, while Android's
+hinge-angle sensor is a device-level source. The provider combines those sources
+for the intended app hierarchy; the sensor alone cannot supply every field.
+
+The provider's size and position do not clip hinge state or change angle units.
+This is different from reserved-region rectangles, whose coordinates depend on
+provider bounds. Place `HingeProvider` where the relevant hierarchy is available;
+use an explicit observer when code outside React needs the same readings.
+
 ## Outside React
 
 ```tsx
@@ -51,6 +64,41 @@ unsubscribe();
 The mounted provider connects the observer to a native hierarchy. `get()` and
 `subscribe()` can be used outside React; there is no implicit global window.
 Use one observer per provider. Unmounting the provider clears its snapshot.
+
+## Reanimated
+
+The optional `react-native-hinges/reanimated` entry point requires Reanimated
+`^4.7.0` and Worklets `^0.13.0`. The example uses `4.7.0` and `0.13.0`. Configure
+the Worklets Babel plugin and rebuild native dependencies using
+[Reanimated's setup guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
+
+```tsx
+import { AnimatedHingeProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { useAnimatedStyle } from 'react-native-reanimated';
+
+function useHingeCardStyle() {
+  const hinges = useAnimatedHinges();
+  return useAnimatedStyle(() => {
+    const angle = hinges.get()[0]?.angle;
+    return {
+      opacity: angle == null ? 0 : 1,
+      transform: [{ rotateY: `${angle == null ? 0 : Math.PI - angle}rad` }],
+    };
+  });
+}
+```
+
+Use `AnimatedHingeProvider` instead of `HingeProvider` for this hierarchy.
+The ordinary hook and `observer` prop still work. The animated hook returns a
+read-only-by-contract `SharedValue<readonly Hinge[]>`, initially `[]`; read it
+inside worklets and do not write to it. It preserves raw radians and nullable
+angles. The library adds no smoothing or sampling-frequency guarantee.
+
+Reanimated removes the event handler on provider unmount, but an externally
+retained shared value currently keeps its last snapshot. The ordinary observer
+is cleared independently. See the [integration guide](website/docs/reanimated.md)
+for a complete example and current validation limits. These APIs are not present
+in the npm placeholder.
 
 ## Native behavior
 

@@ -54,6 +54,18 @@ subscribes. An uncached first render returns `[]`: the module does not block Rea
 waiting for an OS callback. Initial native readings do not require moving the hinge.
 There is no guarantee that the first rendered frame contains a reading.
 
+## Why a hook without a provider?
+
+Hinge posture and angle describe the React root's hierarchy/window. Moving or
+resizing a child panel does not change those readings, so the hook can observe
+the existing native root without adding a wrapper view. It subscribes to updates
+and releases its subscription on unmount. Separate roots retain separate scopes.
+
+[Reserved regions](https://appandflow.github.io/react-native-reserved-regions/docs/usage)
+need a provider because their rectangles are relative to a particular view.
+Moving that view changes the local coordinates of a fold or cutout. Use hinges
+for posture and angle-driven behavior, and reserved regions for layout geometry.
+
 ## Outside React
 
 ```ts

@@ -19,6 +19,27 @@ export default function HingeSummary() {
 }
 ```
 
+## Why no provider?
+
+Hinge readings contain posture and angle, with no view-relative rectangle. Moving
+or resizing a panel does not change the angle it observes. The existing React
+root provides the native attachment point, so a provider would add no useful
+measurement boundary. `useHinges()` subscribes to that root's readings and releases
+its subscription on unmount. For code outside React, use
+[`createHingeObserver(rootTag)`](./observers.md).
+
+The APIs have different scopes:
+
+| API                                                | What defines its scope?                    | What happens when a child panel moves?                                  |
+| -------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------- |
+| `useHinges()`                                      | The existing React root's hierarchy/window | Posture and angle stay the same if the native hinge state is unchanged. |
+| `ReservedRegionsProvider` + `useReservedRegions()` | The provider's native view                 | Region frames change with that view's position and bounds.              |
+
+A hinge reading alone cannot tell you where to split a panel or leave room for a
+cutout. Use [reserved regions](https://appandflow.github.io/react-native-reserved-regions/docs/usage)
+for those layout decisions. You can use both libraries together without a hinge
+provider around the region provider.
+
 ## Observation scope
 
 The hook reads React Native's existing `RootTagContext`. On iOS, the native module attaches `UIHingeInteraction` to that root's existing UIView. On Android, it observes the root's Activity window and optional hinge-angle sensor. It creates no native view.

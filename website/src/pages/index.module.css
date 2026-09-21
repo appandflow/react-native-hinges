@@ -100,6 +100,8 @@
 .provider {
   height: 262px;
   position: relative;
+  perspective: 900px;
+  transform-style: preserve-3d;
 }
 .origin {
   position: absolute;

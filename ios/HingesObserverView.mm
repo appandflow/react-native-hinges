@@ -1,5 +1,7 @@
 #import "HingesObserverView.h"
 
+#import "HingeInteraction.h"
+
 #import <UIKit/UIKit.h>
 #import <react/renderer/components/HingesSpec/ComponentDescriptors.h>
 #import <react/renderer/components/HingesSpec/EventEmitters.h>
@@ -26,31 +28,21 @@ using namespace facebook::react;
   if (self = [super initWithFrame:frame]) {
     static const auto defaultProps = std::make_shared<const HingesObserverViewProps>();
     _props = defaultProps;
-#if defined(__IPHONE_27_1) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_27_1
-    if (@available(iOS 27.1, *)) {
-      __weak HingesObserverView *weakSelf = self;
-      UIHingeInteraction *interaction = [[UIHingeInteraction alloc]
-          initWithUpdateHandler:^(UIHingeInteraction *interaction, UIHingeInteractionUpdate *update) {
-            HingesObserverView *strongSelf = weakSelf;
-            if (strongSelf == nil) return;
-            HingesObserverViewEventEmitter::OnHingesChange snapshot;
-            UIHinge *hinge = update.hinge;
-            if (hinge != nil) {
-              std::string status = "unknown";
-              switch (hinge.status) {
-                case UIHingeStatusClosed: status = "closed"; break;
-                case UIHingeStatusPartiallyOpen: status = "partiallyOpen"; break;
-                case UIHingeStatusFullyOpen: status = "fullyOpen"; break;
-                case UIHingeStatusUnknown: break;
-              }
-              snapshot.hinges.push_back({status, hinge.angle, true});
-            }
-            strongSelf->_snapshot = std::move(snapshot);
-            [strongSelf emitSnapshot];
-          }];
+    __weak HingesObserverView *weakSelf = self;
+    id<UIInteraction> interaction = HingesMakeInteraction(^(NSArray<NSDictionary *> *hinges) {
+      HingesObserverView *strongSelf = weakSelf;
+      if (strongSelf == nil) return;
+      HingesObserverViewEventEmitter::OnHingesChange snapshot;
+      for (NSDictionary *hinge in hinges) {
+        snapshot.hinges.push_back(
+            {[hinge[@"status"] UTF8String], [hinge[@"angle"] doubleValue], [hinge[@"hasAngle"] boolValue]});
+      }
+      strongSelf->_snapshot = std::move(snapshot);
+      [strongSelf emitSnapshot];
+    });
+    if (interaction != nil) {
       [self addInteraction:interaction];
     }
-#endif
   }
   return self;
 }

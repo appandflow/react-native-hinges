@@ -231,8 +231,8 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
     backgroundColor: interpolateColor(angle.get(), [0, Math.PI], ['#b2ac92', '#f2ebd7']),
   }));
   const detailsStyle = useAnimatedStyle(() => {
-    const opacity = Math.max(0, Math.min(1, (angle.get() - Math.PI / 3) / (Math.PI / 3)));
-    return { opacity, transform: [{ translateY: reducedMotion ? 0 : (1 - opacity) * 20 }] };
+    const opacity = Math.max(0, Math.min(1, (angle.get() - (Math.PI * 4) / 9) / ((Math.PI * 4) / 9)));
+    return { opacity, transform: [{ translateX: reducedMotion ? 0 : (1 - opacity) * 64 }] };
   });
   const sunStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: reducedMotion ? 0 : (1 - angle.get() / Math.PI) * 50 }],
@@ -259,10 +259,12 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
           )}
           <Animated.View style={[styles.page, styles.landscape, { width: leftWidth }, landscapeStyle]}>
             <Text style={styles.pageLabel}>A PLACE TO EXHALE</Text>
-            <Animated.View style={[styles.sun, sunStyle]} />
-            <View style={styles.mountainFar} />
-            <View style={styles.mountainNear} />
-            <View style={styles.lake} />
+            <View pointerEvents="none" style={styles.landscapeArt}>
+              <Animated.View style={[styles.sun, sunStyle]} />
+              <View style={styles.mountainFar} />
+              <View style={styles.mountainNear} />
+              <View style={styles.lake} />
+            </View>
             <View style={styles.landscapeFooter}>
               <Text style={styles.destination}>Into{'\n'}the quiet.</Text>
               <Text style={styles.location}>SAGUENAY / QUÉBEC</Text>
@@ -270,9 +272,9 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
           </Animated.View>
           <Animated.View style={[styles.page, { left: rightX, width: Math.max(0, width - rightX) }, journalStyle]}>
             <Text style={styles.journalLabel}>{entry.label}</Text>
-            <Text style={styles.number}>{entry.number}</Text>
-            <Text style={styles.journalTitle}>{entry.heading}</Text>
             <Animated.View style={detailsStyle}>
+              <Text style={styles.number}>{entry.number}</Text>
+              <Text style={styles.journalTitle}>{entry.heading}</Text>
               <View style={styles.rule} />
               <Text style={styles.journalBody}>{entry.body}</Text>
             </Animated.View>
@@ -339,6 +341,7 @@ const styles = StyleSheet.create({
   divisionMarker: { position: 'absolute', backgroundColor: '#c3e1a0', opacity: 0.35 },
   page: { position: 'absolute', top: 0, height: 344, overflow: 'hidden', borderRadius: 12, padding: 17 },
   landscape: { left: 0 },
+  landscapeArt: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, transform: [{ scaleX: -1 }] },
   pageLabel: { fontSize: 8, letterSpacing: 1.1, color: '#274638', zIndex: 2, fontWeight: '700' },
   sun: {
     position: 'absolute',

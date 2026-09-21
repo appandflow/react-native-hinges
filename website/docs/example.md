@@ -48,8 +48,10 @@ The example opens **Field Notes**, a two-page travel journal using both librarie
   occlusion bounds, with a 12-point gap. The tabs use the clear spans on either
   side; amber outlines show measured rectangles. The API does not identify what
   causes an occlusion.
-- `useAnimatedHinges()` drives lighting and fades/slides secondary journal text
-  between 120° and 60°. The pages stay geometrically flat; the physical screen
+- `useAnimatedHinges()` drives lighting and fades the journal number, headline,
+  body, and footer while sliding them toward the outer edge between 160° and 80°.
+  The mirrored landscape keeps the sun near the outer edge, clear of the fold.
+  The pages stay geometrically flat; the physical screen
   supplies perspective. Reduced motion disables translation. When the angle is
   unavailable, the artwork appears open; the underlying reading remains `null`.
 

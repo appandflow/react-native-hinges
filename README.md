@@ -16,54 +16,44 @@ development in this repository; it is not implemented by that npm release.
 ## React usage
 
 ```tsx
-import { HingeProvider, useHinges } from 'react-native-hinges';
+import { Text } from 'react-native';
+import { useHinges } from 'react-native-hinges';
 
-function Screen() {
+export default function Screen() {
   const hinges = useHinges();
-  return null;
-}
-
-export default function App() {
-  return (
-    <HingeProvider style={{ flex: 1 }}>
-      <Screen />
-    </HingeProvider>
-  );
+  return <Text>{hinges[0]?.status ?? 'No reading'}</Text>;
 }
 ```
+
+No provider or view ref is required. The hook uses React Native's `RootTagContext`
+and observes the existing native root. Multiple hooks on one root share native
+observation. Separate roots keep separate snapshots; there is no implicit global window.
 
 Each hinge has `status: 'unknown' | 'closed' | 'partiallyOpen' | 'fullyOpen'` and
 `angle: number | null` in radians. An empty array means no readings are available
 (including before initialization). Array order is not a persistent identity.
 
-## Why a provider?
-
-The combined API needs a native observation scope. Apple's `UIHingeInteraction`
-attaches to a view and reports the hinge associated with its hierarchy. Android
-WindowManager reports folding posture for an Activity window, while Android's
-hinge-angle sensor is a device-level source. The provider combines those sources
-for the intended app hierarchy; the sensor alone cannot supply every field.
-
-The provider's size and position do not clip hinge state or change angle units.
-This is different from reserved-region rectangles, whose coordinates depend on
-provider bounds. Place `HingeProvider` where the relevant hierarchy is available;
-use an explicit observer when code outside React needs the same readings.
+The hook synchronously reads a native cache, then acquires observation when it
+subscribes. An uncached first render returns `[]`: the module does not block React
+waiting for an OS callback. Initial native readings do not require moving the hinge.
 
 ## Outside React
 
-```tsx
-import { createHingeObserver, HingeProvider } from 'react-native-hinges';
+```ts
+import { createHingeObserver } from 'react-native-hinges';
 
-const observer = createHingeObserver();
+// Pass the intended root's tag from RootTagContext or your native host integration.
+const observer = createHingeObserver(rootTag);
 const unsubscribe = observer.subscribe(() => console.log(observer.get()));
-// Mount once: <HingeProvider observer={observer}>...</HingeProvider>
+console.log(observer.get());
 // When your subscription is no longer needed:
 unsubscribe();
 ```
 
-The mounted provider connects the observer to a native hierarchy. `get()` and
-`subscribe()` can be used outside React; there is no implicit global window.
-Use one observer per provider. Unmounting the provider clears its snapshot.
+Creation reads the native cache once; `get()` returns the latest observed snapshot. `subscribe()` acquires
+observation for that root; the last native subscriber releases it and its cache.
+You can create multiple observers for the same root. Resubscribe to obtain fresh
+readings after observation has stopped.
 
 ## Reanimated
 
@@ -73,7 +63,7 @@ the Worklets Babel plugin and rebuild native dependencies using
 [Reanimated's setup guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
 
 ```tsx
-import { AnimatedHingeProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { useAnimatedHinges } from 'react-native-hinges/reanimated';
 import { useAnimatedStyle } from 'react-native-reanimated';
 
 function useHingeCardStyle() {
@@ -88,22 +78,20 @@ function useHingeCardStyle() {
 }
 ```
 
-Use `AnimatedHingeProvider` instead of `HingeProvider` for this hierarchy.
-The ordinary hook and `observer` prop still work. The animated hook returns a
-read-only-by-contract `SharedValue<readonly Hinge[]>`, initially `[]`; read it
-inside worklets and do not write to it. It preserves raw radians and nullable
-angles. The library adds no smoothing or sampling-frequency guarantee.
+No animated provider is needed. The hook returns a read-only-by-contract
+`SharedValue<readonly Hinge[]>`, initialized from the native cache or `[]`.
+Read it inside worklets and do not write to it. Native events update the value
+on the UI runtime, preserving raw radians and nullable angles without JS delivery
+as an intermediate step. The library adds no smoothing or sampling-frequency guarantee.
 
-Reanimated removes the event handler on provider unmount, but an externally
-retained shared value currently keeps its last snapshot. The ordinary observer
-is cleared independently. See the [integration guide](website/docs/reanimated.md)
-for a complete example and current validation limits. These APIs are not present
-in the npm placeholder.
+Unmounting unregisters the worklet and releases its native subscription. An
+externally retained shared value keeps its last snapshot. See the
+[integration guide](website/docs/reanimated.md) for setup and compatibility limits.
 
 ## Native behavior
 
 Apple's `UIHingeInteraction` reports zero or one hinge for its view hierarchy.
-The provider's bounds do not clip the readings. On Android, each WindowManager
+The root's bounds do not clip the readings. On Android, each WindowManager
 folding feature contributes a posture; an angle is attached only when exactly
 one sensor and at most one feature can be associated. Ambiguous angles are
 `null`. A sensor without a window feature reports `unknown` posture. The library

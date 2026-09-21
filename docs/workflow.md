@@ -74,16 +74,15 @@ The example displays the hinge array, native posture, radians/degrees and
 subscription update count. Test unavailable readings on an ordinary emulator,
 flat and half-open posture on a foldable emulator, and angle conversion from
 Android degrees to public radians. Verify hook and non-React observer updates,
-provider unmount cleanup, and independent observers. Multiple-hinge mappings
+subscription cleanup, and independent root observations. Multiple-hinge mappings
 require a suitable device; unit coverage is not hardware verification.
 
 For the optional Reanimated path, keep Native and simulated Preview results
 separate. Confirm a fixed-angle cold launch, a changing native angle under
-`AnimatedHingeProvider`, and ordinary hook/observer updates alongside the shared
+`useAnimatedHinges()`, and ordinary hook/observer updates alongside the shared
 value. During a JS-stall check, continue supplying native angle changes; a
 self-running preview animation does not establish sensor delivery. The retained
-shared value currently keeps its last snapshot after unmount, while the ordinary
-observer clears.
+shared value currently keeps its last snapshot after unmount, while the native cache clears when its last subscriber leaves.
 
 Treat event-rate samples as distinct changed-value deliveries for that input
 sequence. Record actual elapsed time and gaps; do not equate them with rendered

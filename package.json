@@ -34,7 +34,8 @@
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
-    "!**/.*"
+    "!**/.*",
+    "!android/**/build"
   ],
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
@@ -120,16 +121,16 @@
   },
   "packageManager": "pnpm@12.5.1",
   "codegenConfig": {
-    "name": "HingesViewSpec",
-    "type": "all",
+    "name": "HingesSpec",
+    "type": "modules",
     "jsSrcsDir": "src",
     "android": {
       "javaPackageName": "com.hinges"
     },
     "ios": {
-      "components": {
-        "HingesView": {
-          "className": "HingesView"
+      "modules": {
+        "NativeHinges": {
+          "className": "HingesModule"
         }
       }
     }

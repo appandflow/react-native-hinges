@@ -1,61 +1,40 @@
 ---
-title: Provider and hook
-description: Read native hinge state in React.
+title: React hook
+description: Read native hinge state without a provider.
 ---
 
-Place a `HingeProvider` in the native view hierarchy you want to observe. Descendants read its current snapshot with `useHinges()`.
+Call `useHinges()` anywhere inside a React Native root. No provider or view ref is required.
 
 ```tsx
 import { Text } from 'react-native';
-import { HingeProvider, useHinges } from 'react-native-hinges';
+import { useHinges } from 'react-native-hinges';
 
-function HingeSummary() {
+export default function HingeSummary() {
   const hinges = useHinges();
-
   return hinges.map((hinge, index) => (
     <Text key={index}>
-      {hinge.status}
-      {' · '}
-      {hinge.angle === null ? 'angle unavailable' : `${((hinge.angle * 180) / Math.PI).toFixed(1)}°`}
+      {hinge.status} · {hinge.angle === null ? 'angle unavailable' : `${hinge.angle.toFixed(2)} radians`}
     </Text>
   ));
 }
-
-export default function App() {
-  return (
-    <HingeProvider style={{ flex: 1 }}>
-      <HingeSummary />
-    </HingeProvider>
-  );
-}
 ```
 
-The provider accepts standard React Native `View` props and renders a native view. A nested provider establishes a separate scope; a hook consumer reads its nearest one. Hinge observations are associated with the native hierarchy or window, rather than a process-wide singleton.
+## Observation scope
 
-## Why does hinge state need a provider?
+The hook reads React Native's existing `RootTagContext`. On iOS, the native module attaches `UIHingeInteraction` to that root's existing UIView. On Android, it observes the root's Activity window and optional hinge-angle sensor. It creates no native view.
 
-The native sources have different scopes:
+Multiple consumers on the same root share native observation. Different roots have separate snapshots. Hinge state follows the React root, including for descendants rendered in a modal; the modal does not automatically establish a different observation scope. Hosts with separate React roots use each root's own scope.
 
-| Source                        | Native scope            |
-| ----------------------------- | ----------------------- |
-| iOS `UIHingeInteraction`      | Attached view hierarchy |
-| Android WindowManager posture | Activity window         |
-| Android hinge-angle sensor    | Device                  |
+## Initialization and lifetime
 
-The provider supplies the hierarchy/window needed for a complete observation. A device sensor alone does not describe the native posture of each app window, and UIKit's interaction needs an attached view. A process-wide value would have to choose a hierarchy when an app has more than one window.
+The hook returns a read-only array and never suspends. It reads the native cache during rendering and subscribes after mounting. The first uncached render returns `[]`; an empty array can also mean no hinges or unsupported APIs. Initial native readings do not require physical movement, but their delivery is asynchronous.
 
-Provider bounds are not measurement coordinates: resizing or moving the view does not crop a hinge or change its angle. Use one provider for the intended hierarchy, then share its observer with [non-React consumers](./observers.md) when needed.
+Subscriptions keep the native observation alive. The last subscriber releases its interaction, sensors, listeners, and cache. Calling `get()` alone does not start observation. A later mount can therefore begin with `[]` again.
 
-## Understand the snapshot
+## Snapshot values
 
-The hook returns a read-only array, initially `[]`. An empty array can also mean that the platform reports no hinges or does not support the API. Calling the hook outside a provider throws.
+`status` comes from the native posture: `unknown`, `closed`, `partiallyOpen`, or `fullyOpen`. `angle` is in radians, or `null` when unavailable or ambiguous. The library does not infer posture from angle thresholds or invent angles from posture. Array positions are not stable hardware identities.
 
-`status` comes from the native posture: `unknown`, `closed`, `partiallyOpen`, or `fullyOpen`. `angle` is in **radians**, or `null` when a reading is unavailable or cannot be associated with one hinge. The library does not infer posture from angle thresholds or invent angles from posture.
+Hinges have no view-relative frame. Root bounds do not crop hinge state. Reserved rectangles remain in the separate reserved-regions library.
 
-An array supports multiple hinges. Its positions are not stable hardware identities. Native platform capabilities determine how many hinges are reported and which have angle readings.
-
-## Hinge state and layout
-
-Hinge state has no view-relative frame. Moving or resizing a provider does not clip a hinge or create new angle coordinates. A hinge can exist even when there is no active display division in the provider's bounds.
-
-For a non-React consumer, [create an observer](./observers.md). For animated styles, use [the optional Reanimated integration](./reanimated.md). For platform-specific mappings, see [native behavior](./platforms.md).
+For non-React code, [create an observer](./observers.md). For animation, use [Reanimated](./reanimated.md). See [platform behavior](./platforms.md) for native mappings.

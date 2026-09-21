@@ -3,7 +3,7 @@
 ## Project
 
 This repository publishes `react-native-hinges`, a New Architecture-only
-React Native library. `src/` owns the public TypeScript contract and Fabric spec;
+React Native library. `src/` owns the public TypeScript contract and TurboModule spec;
 `ios/` and `android/` own native observations. `example/` runs React Native 0.88 RC.
 `website/` is the Docusaurus documentation site and is never published to npm.
 

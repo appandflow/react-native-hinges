@@ -3,7 +3,7 @@ title: Installation
 description: Try the native hinge API and check platform requirements.
 ---
 
-`react-native-hinges` exposes hinge posture and angles through a React provider and hook, with a snapshot and subscription API for code outside React.
+`react-native-hinges` exposes hinge posture and angles through a provider-free React hook, with a snapshot and subscription API for code outside React.
 
 ## Preview status
 
@@ -21,7 +21,7 @@ The package contains a native Fabric view. When integrating a package release, i
 
 `react-native-hinges` is independent of `react-native-reserved-regions`. Use the reserved-regions package separately when you need display division or occlusion geometry. Hinge observations describe physical posture and angle, without rectangle coordinates.
 
-Continue with [the provider and hook](./usage.md).
+Continue with [the React hook](./usage.md).
 
 ## Optional animation support
 

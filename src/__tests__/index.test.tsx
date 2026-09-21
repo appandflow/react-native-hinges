@@ -1,130 +1,140 @@
-import * as React from 'react';
-import { expect, it, jest } from '@jest/globals';
+import { useEffect } from 'react';
+import { beforeEach, expect, it, jest } from '@jest/globals';
 import { act, create } from 'react-test-renderer';
-import { HingeProvider, createHingeObserver, useHinges, type Hinge } from '../index';
-import type { HingesChangeEvent } from '../HingesViewNativeComponent';
+import { RootTagContext, type RootTag } from 'react-native';
+import { createHingeObserver, useHinges, type Hinge } from '../index';
+import NativeHinges from '../HingesModule';
+import type { HingesChangeEvent, NativeHinge } from '../NativeHinges';
 
 jest.mock('react-native-reanimated', () => {
-  throw new Error('The core entrypoint must not load Reanimated');
+  throw new Error('Core must not load Reanimated');
 });
 jest.mock('react-native-worklets', () => {
-  throw new Error('The core entrypoint must not load Worklets');
+  throw new Error('Core must not load Worklets');
 });
-
-let mockOnHingesChange: ((event: { nativeEvent: HingesChangeEvent }) => void) | undefined;
-jest.mock('../HingesView', () => ({
-  HingesView: ({
-    children,
-    onHingesChange,
-  }: {
-    children: React.ReactNode;
-    onHingesChange: typeof mockOnHingesChange;
-  }) => {
-    mockOnHingesChange = onHingesChange;
-    return children;
+const mockSnapshots = new Map<number, readonly NativeHinge[]>();
+const mockListeners = new Set<(event: HingesChangeEvent) => void>();
+jest.mock('../HingesModule', () => ({
+  __esModule: true,
+  default: {
+    getSnapshot: jest.fn((root: number) => ({ hinges: mockSnapshots.get(root) ?? [] })),
+    startObserving: jest.fn(),
+    stopObserving: jest.fn(),
+    onHingesChange: jest.fn((listener: (event: HingesChangeEvent) => void) => {
+      mockListeners.add(listener);
+      return { remove: () => mockListeners.delete(listener) };
+    }),
   },
 }));
+const native = [{ status: 'partiallyOpen', angle: Math.PI / 2, hasAngle: true }];
+function emit(rootTag: number, hinges: readonly NativeHinge[]) {
+  mockSnapshots.set(rootTag, hinges);
+  for (const listener of mockListeners) listener({ rootTag, hinges });
+}
+beforeEach(() => {
+  mockSnapshots.clear();
+  mockListeners.clear();
+  jest.clearAllMocks();
+});
 
-it('shares immutable hinge arrays with React and non-React consumers and cleans up subscriptions', async () => {
-  const observer = createHingeObserver();
-  const listener = jest.fn();
-  const unsubscribe = observer.subscribe(listener);
-  const observed: (readonly Hinge[])[] = [];
-  function Probe() {
-    const hinges = useHinges();
-    React.useEffect(() => {
-      observed.push(hinges);
-    }, [hinges]);
-    return null;
-  }
-  let renderer: ReturnType<typeof create>;
-  await act(async () => {
-    renderer = create(
-      <HingeProvider observer={observer}>
-        <Probe />
-      </HingeProvider>,
-    );
-  });
-  expect(observer.get()).toEqual([]);
-  const event = {
-    nativeEvent: {
-      hinges: [
-        { status: 'partiallyOpen', angle: Math.PI / 2, hasAngle: true },
-        { status: 'fullyOpen', angle: 0, hasAngle: false },
-      ],
-    },
-  };
-  await act(async () => {
-    mockOnHingesChange?.(event);
-  });
+it('reads cached initial state without starting observation and preserves immutable snapshot identity', () => {
+  mockSnapshots.set(1, native);
+  const observer = createHingeObserver(1);
   const snapshot = observer.get();
-  expect(snapshot).toEqual([
-    { status: 'partiallyOpen', angle: Math.PI / 2 },
-    { status: 'fullyOpen', angle: null },
-  ]);
-  expect(observed.at(-1)).toBe(snapshot);
+  expect(snapshot).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
+  expect(observer.get()).toBe(snapshot);
   expect(Object.isFrozen(snapshot)).toBe(true);
   expect(Object.isFrozen(snapshot[0])).toBe(true);
-  expect(listener).toHaveBeenCalledTimes(1);
-  await act(async () => {
-    mockOnHingesChange?.(event);
-  });
+  expect(NativeHinges.startObserving).not.toHaveBeenCalled();
+});
+
+it('isolates roots, shares one observation across subscriptions, and releases only the final subscription', () => {
+  const observer = createHingeObserver(1);
+  const first = jest.fn();
+  const second = jest.fn();
+  const offFirst = observer.subscribe(first);
+  const offSecond = observer.subscribe(second);
+  expect(NativeHinges.startObserving).toHaveBeenCalledTimes(1);
+  emit(2, native);
+  expect(first).not.toHaveBeenCalled();
+  emit(1, native);
+  expect(first).toHaveBeenCalledTimes(1);
+  emit(1, native);
+  expect(first).toHaveBeenCalledTimes(1);
+  offFirst();
+  offFirst();
+  expect(NativeHinges.stopObserving).not.toHaveBeenCalled();
+  emit(1, [{ status: 'future', angle: 99, hasAngle: false }]);
+  expect(observer.get()).toEqual([{ status: 'unknown', angle: null }]);
+  expect(second).toHaveBeenCalledTimes(2);
+  offSecond();
+  expect(NativeHinges.stopObserving).toHaveBeenCalledWith(1);
+  expect(mockListeners.size).toBe(0);
+});
+
+it('does not replace a newer cached snapshot with a queued older event', () => {
+  const observer = createHingeObserver(1);
+  const off = observer.subscribe(jest.fn());
+  emit(1, native);
+  const snapshot = observer.get();
+  for (const listener of mockListeners) listener({ rootTag: 1, hinges: [] });
   expect(observer.get()).toBe(snapshot);
-  expect(listener).toHaveBeenCalledTimes(1);
-  unsubscribe();
-  await act(async () => {
-    renderer!.unmount();
-  });
-  expect(observer.get()).toEqual([]);
-  expect(listener).toHaveBeenCalledTimes(1);
+  off();
 });
 
-it('isolates providers and preserves unavailable or unknown native readings', async () => {
-  const first = createHingeObserver();
-  const second = createHingeObserver();
-  let renderer: ReturnType<typeof create>;
-  let other: ReturnType<typeof create>;
-  await act(async () => {
-    renderer = create(<HingeProvider observer={first} />);
-  });
-  const firstHandler = mockOnHingesChange;
-  await act(async () => {
-    other = create(<HingeProvider observer={second} />);
-  });
-  await act(async () => {
-    firstHandler?.({ nativeEvent: { hinges: [{ status: 'future', angle: 0, hasAngle: false }] } });
-  });
-  expect(first.get()).toEqual([{ status: 'unknown', angle: null }]);
-  expect(second.get()).toEqual([]);
-  await act(async () => {
-    firstHandler?.({ nativeEvent: { hinges: [] } });
-  });
-  expect(first.get()).toEqual([]);
-  await act(async () => {
-    renderer!.unmount();
-    other!.unmount();
-  });
-});
-
-it('transfers the current snapshot when the provider receives a new observer', async () => {
-  const first = createHingeObserver();
-  const second = createHingeObserver();
-  let renderer: ReturnType<typeof create>;
-  await act(async () => {
-    renderer = create(<HingeProvider observer={first} />);
-  });
-  await act(async () => {
-    mockOnHingesChange?.({
-      nativeEvent: { hinges: [{ status: 'partiallyOpen', angle: Math.PI / 2, hasAngle: true }] },
+it('hooks work without a provider, follow root changes, and stop on unmount', async () => {
+  let latest: readonly Hinge[] = [];
+  function Consumer() {
+    const hinges = useHinges();
+    useEffect(() => {
+      latest = hinges;
     });
+    return null;
+  }
+  const child = <Consumer />;
+  const tree = (root: number) => (
+    <RootTagContext.Provider value={root as unknown as RootTag}>{child}</RootTagContext.Provider>
+  );
+  mockSnapshots.set(1, native);
+  let renderer: ReturnType<typeof create>;
+  await act(() => {
+    renderer = create(tree(1));
   });
-  await act(async () => {
-    renderer!.update(<HingeProvider observer={second} />);
+  expect(latest).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
+  await act(() => emit(1, [{ status: 'closed', angle: 0, hasAngle: true }]));
+  expect(latest[0]?.status).toBe('closed');
+  await act(() => {
+    renderer.update(tree(2));
   });
-  expect(first.get()).toEqual([]);
-  expect(second.get()).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
-  await act(async () => {
-    renderer!.unmount();
-  });
-  expect(second.get()).toEqual([]);
+  expect(latest).toEqual([]);
+  expect(NativeHinges.stopObserving).toHaveBeenCalledWith(1);
+  expect(NativeHinges.startObserving).toHaveBeenCalledWith(2);
+  await act(() => renderer.unmount());
+  expect(NativeHinges.stopObserving).toHaveBeenCalledWith(2);
+});
+
+it('keeps React snapshots stable until notification even if the native cache advances', () => {
+  const observer = createHingeObserver(1);
+  const listener = jest.fn();
+  const off = observer.subscribe(listener);
+  const snapshot = observer.get();
+  mockSnapshots.set(1, native);
+  expect(observer.get()).toBe(snapshot);
+  for (const callback of mockListeners) callback({ rootTag: 1, hinges: native });
+  expect(listener).toHaveBeenCalledTimes(1);
+  expect(observer.get()).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
+  for (const callback of mockListeners) callback({ rootTag: 1, hinges: native });
+  expect(listener).toHaveBeenCalledTimes(1);
+  off();
+});
+
+it('refreshes state that changed between observer creation and subscription', () => {
+  const observer = createHingeObserver(1);
+  expect(observer.get()).toEqual([]);
+  mockSnapshots.set(1, native);
+  const listener = jest.fn();
+  const off = observer.subscribe(listener);
+  expect(observer.get()).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
+  expect(listener).toHaveBeenCalledTimes(1);
+  off();
 });

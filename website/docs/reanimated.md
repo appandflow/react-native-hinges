@@ -9,7 +9,7 @@ This is an initial integration. It does not promise a sampling frequency, a disp
 
 ## Install the optional dependencies
 
-The core provider, hook, and observer do not require Reanimated. For the animated entry point, the current peer ranges are Reanimated `^4.7.0` and Worklets `^0.13.0`; the example uses `4.7.0` and `0.13.0`.
+The core hook and observer do not require Reanimated. For the animated entry point, the current peer ranges are Reanimated `^4.7.0` and Worklets `^0.13.0`; the example uses `4.7.0` and `0.13.0`.
 
 ```sh
 pnpm add react-native-reanimated@^4.7.0 react-native-worklets@^0.13.0
@@ -19,11 +19,11 @@ For a React Native Community CLI app, add `react-native-worklets/plugin` last in
 
 The npm `0.1.0-alpha.0` placeholder does not contain this integration. Use the repository source until a functional alpha is published.
 
-## Replace the provider for this hierarchy
+## Use the hook
 
 ```tsx
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import { AnimatedHingeProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { useAnimatedHinges } from 'react-native-hinges/reanimated';
 
 function HingeCard() {
   const hinges = useAnimatedHinges();
@@ -39,17 +39,13 @@ function HingeCard() {
 }
 
 export default function App() {
-  return (
-    <AnimatedHingeProvider style={{ flex: 1 }}>
-      <HingeCard />
-    </AnimatedHingeProvider>
-  );
+  return <HingeCard />;
 }
 ```
 
 The example reads the first hinge and hides the card when its angle is unavailable. An app supporting several hinges must choose the appropriate observation; array order is not a stable hardware identity.
 
-`AnimatedHingeProvider` takes the same props as `HingeProvider`, including `observer`. It replaces the ordinary provider for that hierarchy. The regular `useHinges()` hook and `createHingeObserver()` subscriptions still work beneath it, so a React readout and an animated view can use the same native source.
+No provider is needed. The regular hook, explicit observers, and animated hooks share native observation for the same React root. Each animated hook owns a shared value.
 
 ## Shared-value contract
 
@@ -57,7 +53,7 @@ The example reads the first hinge and hides the card when its angle is unavailab
 function useAnimatedHinges(): SharedValue<readonly Hinge[]>;
 ```
 
-The shared value starts at `[]`. Each hinge keeps the ordinary API's native status and raw angle in radians, with `null` for unavailable angles. The hook throws outside `AnimatedHingeProvider`. Each animated provider owns a separate shared value.
+The shared value starts from the native cache or `[]`. Hinge status and raw radians have the same meaning as the ordinary API; unavailable angles remain `null`.
 
 Read it with `get()` inside a worklet such as `useAnimatedStyle`. Treat the value as read-only even though the underlying Reanimated type exposes setters. Reading a shared value during React rendering is not supported; use the regular `useHinges()` hook for rendered text. See [Reanimated's shared-value guidance](https://docs.swmansion.com/react-native-reanimated/docs/core/useSharedValue/).
 
@@ -71,6 +67,8 @@ The demo's simulated preview is generated animation. Its raw/smoothed switch cha
 
 ## Lifetime and validation limits
 
-Reanimated unregisters the native event handler when the animated provider unmounts. If other code retains its shared value, that value currently retains the last snapshot; it is not reset by the observer's unmount cleanup. The ordinary observer is cleared separately.
+Unmounting unregisters the root-tag event handler and releases the native subscription. An externally retained shared value keeps its last snapshot. The native cache is cleared when the root has no subscribers.
 
-The initial Android API 36 emulator checks observed native angle updates during the demo's one-second JavaScript stall. Two cold app relaunches also delivered a fixed 111-degree reading without further input after the first telemetry publication. These checks cover that emulator and input sequence, not all remount timing, iOS callbacks, or physical-device performance. A successful simulated-preview animation alone does not verify native delivery. The first alpha's release notes record the available evidence.
+This prototype registers the handler returned by Reanimated 4.7's `useEvent` directly against the React root tag. Android uses RN 0.88's internal Fabric event emitter type to route the event only to native observers; iOS uses `notifyObserversOfEvent` and explicitly registers an already-loaded Reanimated module with that dispatcher. These integration points need revalidation when upgrading React Native or Reanimated. They avoid delivering angle updates through the JavaScript thread first.
+
+The root-scoped Android implementation has been tested with fixed-angle cold launches and native angle updates during a one-second JS stall. These emulator checks do not establish physical-device rates or first-frame availability. A simulated-preview animation does not verify sensor delivery.

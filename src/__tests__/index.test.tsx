@@ -142,7 +142,7 @@ it('throws a clear error when useHinges renders without a RootTagContext provide
       }),
     ).toThrow(
       'useHinges must render inside a React Native root: RootTagContext is 0 (or invalid). ' +
-        'In tests, wrap the tree in <RootTagContext.Provider value={1}> (cast as RootTag if needed in TS).',
+        'In tests, wrap the tree in <RootTagContext.Provider value={1 as unknown as RootTag}>.',
     );
   } finally {
     error.mockRestore();

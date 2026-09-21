@@ -10,7 +10,7 @@ export function useRootTag(hookName: string): number {
   if (!Number.isInteger(rootTag) || rootTag <= 0) {
     throw new Error(
       `${hookName} must render inside a React Native root: RootTagContext is 0 (or invalid). ` +
-        'In tests, wrap the tree in <RootTagContext.Provider value={1}> (cast as RootTag if needed in TS).',
+        'In tests, wrap the tree in <RootTagContext.Provider value={1 as unknown as RootTag}>.',
     );
   }
   return rootTag;

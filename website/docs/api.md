@@ -36,7 +36,7 @@ function useHinges(): readonly Hinge[];
 
 Reads the current React root's native snapshot without a provider or extra view. Initially reads the native cache, then subscribes. Returns `[]` until readings are available and when unsupported. Does not suspend. There is no separate readiness flag.
 
-Throws if rendered outside a React Native root, where `RootTagContext` is still its default of `0`. In tests without an `AppContainer`, wrap the tree in `<RootTagContext.Provider value={1}>`.
+Throws if rendered outside a React Native root, where `RootTagContext` is still its default of `0`. In tests without an `AppContainer`, wrap the tree in `<RootTagContext.Provider value={1 as unknown as RootTag}>`.
 
 ## HingeObserver
 

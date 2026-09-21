@@ -5,6 +5,17 @@ import com.facebook.react.fabric.events.FabricEventEmitter;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.RCTModernEventEmitter;
 
+/**
+ * This file is Java, not Kotlin, because {@code FabricEventEmitter} is declared {@code internal} in
+ * react-native's Kotlin sources: Java can reference it, Kotlin cannot.
+ *
+ * <p>Without the {@link #dispatchModern} override, react-native routes this root-tag event through
+ * {@code FabricUIManager.receiveEvent} into
+ * {@code fabric/mounting/SurfaceMountingManager.kt#dispatchEvent}, which appends events for a
+ * {@code ViewState} with no {@code eventEmitter} to {@code pendingEventQueue}. That queue is only
+ * drained by {@code updateEventEmitter}, which never runs for the root tag, so every hinge update
+ * would accumulate there without bound.
+ */
 final class HingesChangeEvent extends Event<HingesChangeEvent> {
   private final WritableMap payload;
 

@@ -57,3 +57,21 @@ upgrading the supported versions. Temporary diagnostics were removed.
 Changing iOS angles, physical hardware, multiple live roots/windows, and
 first-visible-frame layout correction were not verified. The simulator only
 provided the static closed hinge state in this run.
+
+## Surface presenter lookup
+
+The root lookup now uses the `RCTSurfacePresenter` injected by `RCTInstance`,
+then `surfaceForRootTag:` and the surface's cached view on the main thread. It
+no longer uses `viewRegistry_DEPRECATED` or creates a library-owned view.
+
+The replacement compiled in 11.3 seconds; Stim's build/install/launch took
+43.1 seconds on the same owned Duo and Metro port. The rebuilt app reported
+0.0 degrees, `closed`, and one initial Reanimated reading. Both the React hook
+and standalone observer reported 0.000 radians.
+
+A React Native reload visibly returned the app to Field Notes. Opening Sensor
+Lab again reproduced all three readings without moving the simulated hinge.
+The final `stim logs --errors` check had no matching records. Evidence is the
+retained task screenshot `root-hinges-ios/surface-presenter-reload.png`.
+This validates static observation and reload recovery, not changing iOS angles
+or multiple simultaneously mounted surfaces.

@@ -125,7 +125,7 @@
     "type": "modules",
     "jsSrcsDir": "src",
     "android": {
-      "javaPackageName": "com.hinges"
+      "javaPackageName": "com.appandflow.hinges"
     },
     "ios": {
       "modules": {

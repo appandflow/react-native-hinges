@@ -1,4 +1,4 @@
-package com.hinges
+package com.appandflow.hinges
 
 import android.app.Activity
 import android.content.Context

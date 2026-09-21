@@ -1,4 +1,4 @@
-package com.hinges;
+package com.appandflow.hinges;
 
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.fabric.events.FabricEventEmitter;

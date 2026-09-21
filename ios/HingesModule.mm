@@ -2,6 +2,9 @@
 
 #import <React/RCTComponentEvent.h>
 #import <React/RCTEventDispatcherProtocol.h>
+#import <React/RCTFabricSurface.h>
+#import <React/RCTSurfacePresenter.h>
+#import <React/RCTSurfaceView.h>
 #import <React/RCTUtils.h>
 #import <UIKit/UIKit.h>
 
@@ -21,11 +24,11 @@
   NSMutableDictionary<NSNumber *, NSArray<NSDictionary *> *> *_snapshots;
   std::atomic<bool> _invalidated;
   __weak id<RCTEventDispatcherObserver> _reanimatedObserver;
+  __weak RCTSurfacePresenter *_surfacePresenter;
 }
 
 RCT_EXPORT_MODULE(NativeHinges)
 
-@synthesize viewRegistry_DEPRECATED = _viewRegistry_DEPRECATED;
 @synthesize moduleRegistry = _moduleRegistry;
 
 + (BOOL)requiresMainQueueSetup
@@ -41,6 +44,11 @@ RCT_EXPORT_MODULE(NativeHinges)
     _invalidated = false;
   }
   return self;
+}
+
+- (void)setSurfacePresenter:(RCTSurfacePresenter *)surfacePresenter
+{
+  _surfacePresenter = surfacePresenter;
 }
 
 - (NSDictionary *)getSnapshot:(double)rootTag
@@ -92,7 +100,7 @@ RCT_EXPORT_MODULE(NativeHinges)
     }
     observation.subscribers += 1;
     if (observation.interaction == nil) {
-      UIView *view = [self->_viewRegistry_DEPRECATED viewForReactTag:tag];
+      UIView *view = [self->_surfacePresenter surfaceForRootTag:tag.integerValue].view;
       observation.view = view;
 #if defined(__IPHONE_27_1) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_27_1
       if (@available(iOS 27.1, *)) {

@@ -1,4 +1,4 @@
-package com.hinges
+package com.appandflow.hinges
 
 import com.facebook.react.BaseReactPackage
 import com.facebook.react.bridge.NativeModule

@@ -5,10 +5,11 @@ packages:
 nodeLinker: hoisted
 linkWorkspacePackages: true
 minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - react-native-reserved-regions@0.1.0-alpha.2
 allowBuilds:
   core-js: false
   esbuild: false
   unrs-resolver: false
-  react-native-reserved-regions@https://codeload.github.com/appandflow/react-native-reserved-regions/tar.gz/0c5a9eceb8cfd442e3fac3d115cc8a63c53a15a9: true
 patchedDependencies:
   react-native-worklets@0.13.0: patches/react-native-worklets@0.13.0.patch

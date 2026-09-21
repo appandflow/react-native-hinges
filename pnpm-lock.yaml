@@ -230,8 +230,8 @@ importers:
         specifier: 4.7.0
         version: 4.7.0(react-native-worklets@0.13.0(patch_hash=2438760987bc69d55d3cd0ead09a2dfc2efa25be801bfb7133fa102e0d4621df)(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-reserved-regions:
-        specifier: github:appandflow/react-native-reserved-regions#0c5a9eceb8cfd442e3fac3d115cc8a63c53a15a9
-        version: https://codeload.github.com/appandflow/react-native-reserved-regions/tar.gz/0c5a9eceb8cfd442e3fac3d115cc8a63c53a15a9(react-native@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+        specifier: 0.1.0-alpha.2
+        version: 0.1.0-alpha.2(react-native@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-safe-area-context:
         specifier: 5.10.0
         version: 5.10.0(react-native@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -6139,9 +6139,8 @@ packages:
       react-native: 0.86 - 0.88
       react-native-worklets: 0.13.x
 
-  react-native-reserved-regions@https://codeload.github.com/appandflow/react-native-reserved-regions/tar.gz/0c5a9eceb8cfd442e3fac3d115cc8a63c53a15a9:
-    resolution: {gitHosted: true, integrity: sha512-3uEK/3xGE2u6qcFln2CUySd/swP6rf+oDyo5yqjvIPdPtz0BFzqhaNe/BwF2MFDF0bySs5IZXyj3tUvseJY5+A==, tarball: https://codeload.github.com/appandflow/react-native-reserved-regions/tar.gz/0c5a9eceb8cfd442e3fac3d115cc8a63c53a15a9}
-    version: 0.1.0-alpha.2
+  react-native-reserved-regions@0.1.0-alpha.2:
+    resolution: {integrity: sha512-VeTQvT13OB/ppTlzzFEEoY54lqWPtV4/R8Y7PvO219FsKH6Ht3Aus2TQmtIPHD5h+ivT99e02FzXRlfpM7HdyA==}
     engines: {node: '>=22.18.0'}
     peerDependencies:
       react: '*'
@@ -15079,7 +15078,7 @@ snapshots:
       react-native-worklets: 0.13.0(patch_hash=2438760987bc69d55d3cd0ead09a2dfc2efa25be801bfb7133fa102e0d4621df)(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       semver: 7.8.5
 
-  react-native-reserved-regions@https://codeload.github.com/appandflow/react-native-reserved-regions/tar.gz/0c5a9eceb8cfd442e3fac3d115cc8a63c53a15a9(react-native@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
+  react-native-reserved-regions@0.1.0-alpha.2(react-native@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0):
     dependencies:
       react: 19.3.0
       react-native: 0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native-community/cli@20.2.0(supports-color@8.1.1)(typescript@7.0.2))(@react-native/metro-config@0.88.0-rc.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)

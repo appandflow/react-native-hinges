@@ -1,5 +1,7 @@
 #import "HingesModule.h"
 
+#import "HingeInteraction.h"
+
 #import <React/RCTFabricSurface.h>
 #import <React/RCTSurfacePresenter.h>
 #import <React/RCTSurfaceView.h>
@@ -88,35 +90,20 @@
     if (observation.interaction == nil) {
       UIView *view = [self->_surfacePresenter surfaceForRootTag:tag.integerValue].view;
       observation.view = view;
-#if defined(__IPHONE_27_1) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_27_1
-      if (@available(iOS 27.1, *)) {
-        if (view != nil) {
-          __weak HingesModule *weakSelf = self;
-          __weak HingeRootObservation *weakObservation = observation;
-          UIHingeInteraction *interaction = [[UIHingeInteraction alloc]
-              initWithUpdateHandler:^(UIHingeInteraction *interaction, UIHingeInteractionUpdate *update) {
-            HingesModule *strongSelf = weakSelf;
-            HingeRootObservation *strongObservation = weakObservation;
-            if (strongSelf == nil || strongObservation == nil) return;
-            UIHinge *hinge = update.hinge;
-            NSArray<NSDictionary *> *hinges = @[];
-            if (hinge != nil) {
-              NSString *status = @"unknown";
-              switch (hinge.status) {
-                case UIHingeStatusClosed: status = @"closed"; break;
-                case UIHingeStatusPartiallyOpen: status = @"partiallyOpen"; break;
-                case UIHingeStatusFullyOpen: status = @"fullyOpen"; break;
-                case UIHingeStatusUnknown: break;
-              }
-              hinges = @[@{@"status": status, @"angle": @(hinge.angle), @"hasAngle": @YES}];
-            }
-            [strongSelf updateRoot:tag observation:strongObservation hinges:hinges];
-          }];
+      if (view != nil) {
+        __weak HingesModule *weakSelf = self;
+        __weak HingeRootObservation *weakObservation = observation;
+        id<UIInteraction> interaction = HingesMakeInteraction(^(NSArray<NSDictionary *> *hinges) {
+          HingesModule *strongSelf = weakSelf;
+          HingeRootObservation *strongObservation = weakObservation;
+          if (strongSelf == nil || strongObservation == nil) return;
+          [strongSelf updateRoot:tag observation:strongObservation hinges:hinges];
+        });
+        if (interaction != nil) {
           observation.interaction = interaction;
           [view addInteraction:interaction];
         }
       }
-#endif
     }
     [self emitSnapshotForRoot:tag hinges:[self getSnapshot:rootTag][@"hinges"]];
   });

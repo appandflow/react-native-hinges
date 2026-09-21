@@ -26,7 +26,9 @@ if (@available(iOS 27.1, *)) {
 
 An older-SDK build returns no hinges even on an iOS 27.1 device because observation was compiled out. A newer-SDK build also returns no hinges on an older runtime. Rebuild with the supporting SDK to enable observation.
 
-Use an Xcode and simulator runtime that include iPhone Duo when testing that device. Automated iOS fold-transition coverage has not yet been established.
+Use an Xcode and simulator runtime that include iPhone Duo when testing that device. Changing iOS angles have not yet been validated.
+
+The host app must adopt the UIScene lifecycle; the example uses `UISceneDelegate` for the React Native release candidate's iOS 27.1 compatibility. See [React Native issue #58606](https://github.com/react/react-native/issues/58606).
 
 [Apple: adaptive layouts on iPhone Duo](https://developer.apple.com/videos/play/tech-talks/111463/)
 
@@ -49,6 +51,10 @@ The current Android registration requests `SENSOR_DELAY_NORMAL`. The effective d
 A supported device can report posture without angle readings. Sensor and WindowManager availability depend on the device, emulator profile, and platform implementation.
 
 [Android: FoldingFeature](https://developer.android.com/reference/androidx/window/layout/FoldingFeature) · [Android: hinge-angle sensor](https://developer.android.com/reference/android/hardware/Sensor#TYPE_HINGE_ANGLE)
+
+## Validation limits
+
+The tested React Native baseline is `0.88.0-rc.1`. Physical hardware, multiple live roots/windows, and multiple-hinge hardware have not yet been validated. Initial readings arrive asynchronously when the native cache is empty; neither the ordinary nor animated hook guarantees a reading in the first rendered frame.
 
 ## Other platforms
 

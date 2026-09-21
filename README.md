@@ -4,8 +4,7 @@ Hinge posture and angle observations for React Native's New Architecture.
 
 ## Installation
 
-`0.1.0-alpha.2` is the functional release candidate. Use the command below once
-publication is verified; until then, run the repository example.
+Install the functional `0.1.0-alpha.2` release:
 
 ```sh
 npm install react-native-hinges@0.1.0-alpha.2
@@ -17,9 +16,12 @@ placeholder and does not implement these APIs.
 
 ## Requirements
 
-- React Native New Architecture (Fabric); example uses 0.88.0-rc.1.
+- React Native New Architecture (Fabric). The tested example uses `0.88.0-rc.1`;
+  a broader supported version range has not been established.
 - iOS 27.1 SDK and runtime for UIKit hinge observations. SDK compile guards allow
   older SDK builds, but those builds return no hinges even on newer devices.
+  The host app must use the UIScene lifecycle for iOS 27.1. The example adopts
+  `UISceneDelegate`; see [React Native issue #58606](https://github.com/react/react-native/issues/58606).
 - Android API 24 or newer with a Jetpack WindowManager-supported folding device.
   Angle readings require an available hinge-angle sensor on API 30 or newer.
 
@@ -46,6 +48,7 @@ Each hinge has `status: 'unknown' | 'closed' | 'partiallyOpen' | 'fullyOpen'` an
 The hook synchronously reads a native cache, then acquires observation when it
 subscribes. An uncached first render returns `[]`: the module does not block React
 waiting for an OS callback. Initial native readings do not require moving the hinge.
+There is no guarantee that the first rendered frame contains a reading.
 
 ## Outside React
 
@@ -122,6 +125,13 @@ Installing either library does not patch a consuming app's Worklets dependency.
 Keeping the animated subtree mounted avoided this failure in the tested case;
 apps that gate its mount need to apply the patch, rebuild the native app, and
 validate it themselves.
+
+Changing iOS angles, physical hardware, multiple live roots/windows, and
+multiple-hinge hardware have not yet been validated.
+
+## Example
+
+[Watch Field Notes on an Android emulator](https://github.com/user-attachments/assets/7f69106d-2649-4591-917c-9aa7743fd5fa): native fold geometry controls the page layout while hinge angles animate its perspective. The example includes the Worklets patch described above.
 
 ## Development
 

@@ -56,6 +56,8 @@ The example installs the reserved-regions implementation from a pinned GitHub
 commit while its functional npm release is pending. The workspace permits that
 exact dependency revision's build during `pnpm install`.
 
+[Watch the native Android emulator demo](https://github.com/user-attachments/assets/7f69106d-2649-4591-917c-9aa7743fd5fa). The recording uses the matching local alpha.2 candidate and the example Worklets patch; it is not a physical-device or npm-installed recording.
+
 ## Sensor Lab
 
 Select **Sensor lab →** to open the numeric readings and diagnostic controls.

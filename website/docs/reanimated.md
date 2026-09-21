@@ -17,7 +17,7 @@ pnpm add react-native-reanimated@^4.7.0 react-native-worklets@^0.13.0
 
 For a React Native Community CLI app, add `react-native-worklets/plugin` last in the Babel plugins list, install iOS pods, and rebuild the native app. Preserve your existing presets and plugins. Follow the [official Reanimated setup instructions](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
 
-This integration is included in the `0.1.0-alpha.2` candidate. See [installation status](./installation.md) before installing; the old `0.1.0-alpha.0` placeholder does not contain it.
+This integration is included in `0.1.0-alpha.2`. See [installation](./installation.md); the old `0.1.0-alpha.0` placeholder does not contain it.
 
 ## Use the hook
 

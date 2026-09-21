@@ -7,7 +7,7 @@ description: Try the native hinge API and check platform requirements.
 
 ## Install the alpha
 
-`0.1.0-alpha.2` is the functional release candidate. The installation command below applies after publication is verified; until then, [run the example from source](./example.md).
+Install the functional `0.1.0-alpha.2` release:
 
 ```sh
 npm install react-native-hinges@0.1.0-alpha.2
@@ -22,6 +22,8 @@ Install iOS pods and rebuild the native app. The explicit version above avoids t
 | React Native | New Architecture / Fabric. The example uses `0.88.0-rc.1`; a broader supported version range has not been established.                                                                         |
 | iOS          | Build with the iOS 27.1 SDK or later and run on iOS 27.1 or later. Older SDKs compile out hinge observation, including on newer devices. Older runtimes return an empty hinge array.           |
 | Android      | API 24 or later, or your app's higher minimum. Posture requires a WindowManager-compatible folding device. An angle requires API 30 or later and an available, unambiguous hinge-angle sensor. |
+
+The iOS host app must use the UIScene lifecycle. The example adopts `UISceneDelegate` for the React Native release candidate's iOS 27.1 compatibility; see [React Native issue #58606](https://github.com/react/react-native/issues/58606).
 
 The package contains a native TurboModule that observes the existing React root. When integrating a package release, install CocoaPods dependencies on iOS and rebuild the native app on both platforms. JavaScript-only updates cannot add its native implementation.
 

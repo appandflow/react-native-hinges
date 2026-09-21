@@ -13,25 +13,45 @@ that the version was published.
 
 Before tagging that candidate:
 
-- [ ] Final API and optional Reanimated entry point reviewed and merged.
-- [ ] All required CI passes on the exact candidate commit, including native builds.
-- [ ] Packed root and `/reanimated` imports/declarations verified; the core import
+- [x] Final API and optional Reanimated entry point reviewed and merged.
+- [x] All required CI passes on the exact candidate commit, including native builds.
+- [x] Packed root and `/reanimated` imports/declarations verified; the core import
       works without installing the optional Reanimated and Worklets peers.
-- [ ] Runtime evidence and unavailable checks recorded in the candidate notes.
+- [x] Runtime evidence and unavailable checks recorded in the candidate notes.
       Keep simulated preview, simulator-native events, and physical-device results
       distinct. Record the SDK and runtime for iOS verification.
-- [ ] npm trusted publishing configured and verified for this exact repository,
-      workflow, and environment. The maintainer has configured both npm trusted publishers; an actual workflow
-      publish remains unverified.
-- [ ] GitHub `release` environment approval/tag restrictions verified in GitHub.
-- [ ] Candidate version, release notes, tarball contents, and dist-tag reviewed.
-- [ ] Functional publish and registry integrity/dist-tag verified after the
+- [x] npm trusted publishing configured and verified for this exact repository,
+      workflow, and environment. The alpha.2 workflow completed a trusted publish.
+- [x] GitHub `release` environment approval/tag restrictions verified in GitHub.
+- [x] Candidate version, release notes, tarball contents, and dist-tag reviewed.
+- [x] Functional publish and registry integrity/dist-tag verified after the
       authorized tag is pushed. A successful source build is not a publish.
-- [ ] Launch links checked. Docusaurus is currently local only; use repository
+- [x] Launch links checked. Docusaurus is currently local only; use repository
       links until a documentation deployment has been completed and checked.
 
 Use [docs/launch.md](docs/launch.md) for the draft announcement and video plan.
 It does not authorize posting or claim that a release has happened.
+
+## Alpha.2 publication record
+
+`0.1.0-alpha.2` is published on npm's `next` tag. The alpha.1 Git tag remains
+unchanged; that version was never published to npm.
+
+- Commit: `bde6e969ff3ccc822cbc7d121fc72608bc90894d`.
+- [Exact-tag verification and trusted publish](https://github.com/appandflow/react-native-hinges/actions/runs/35555247798) passed.
+- [GitHub prerelease](https://github.com/appandflow/react-native-hinges/releases/tag/v0.1.0-alpha.2).
+- Registry tarball bytes match `dist.integrity`; the provenance subject matches
+  those bytes and identifies this repository, `release.yml`, the tag and commit.
+- `npm audit signatures` verified the registry signature and attestation in an
+  isolated fixture containing the published package, with install scripts disabled.
+- Documentation sites remain local builds. Native validation and the consumer
+  Worklets patch requirement are recorded in the release notes.
+
+Registry integrity:
+
+```text
+sha512-oHaYz/l7kYu7G0ZiFOm5QIsjT941O7fGJBSmRb4yPemK+rfIF0dq8N8aTd5rmxqG1lSu7s2AwtS30kRCXHv7nA==
+```
 
 ## One-time trusted-publisher setup
 

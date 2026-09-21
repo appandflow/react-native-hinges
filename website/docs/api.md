@@ -41,7 +41,7 @@ Reads the current React root's native snapshot without a provider or extra view.
 ```ts
 /** Snapshot access for consumers inside or outside React. */
 type HingeObserver = Readonly<{
-  /** Latest immutable snapshot; initially empty. */
+  /** Latest immutable snapshot; initialized from native cache, otherwise empty. */
   get: () => readonly Hinge[];
   /** Subscribe to changes; the returned function removes this listener. */
   subscribe: (listener: () => void) => () => void;

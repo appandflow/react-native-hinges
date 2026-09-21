@@ -6,9 +6,10 @@ example and documentation site are private. Keep this document aligned with
 
 ## First functional alpha readiness
 
-Current status: `0.1.0-alpha.0` on npm is a name-reservation placeholder. No
-functional version has been published. `0.1.0-alpha.1` is the candidate described
-in [the draft notes](docs/releases/0.1.0-alpha.1.md).
+`0.1.0-alpha.0` is a name-reservation placeholder. `0.1.0-alpha.1` is the first
+functional alpha described in [the release notes](docs/releases/0.1.0-alpha.1.md).
+Confirm registry publication with the commands below; a source commit is not proof
+that the version was published.
 
 Before tagging that candidate:
 

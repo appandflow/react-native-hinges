@@ -13,7 +13,7 @@ dist-tags before posting. This document does not authorize posting to X.
 > Here they are together in Field Notes. New Architecture, Reanimated support,
 > and alpha releases available now.
 
-Attach the [folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v3.mp4).
+Attach the [folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v4.mp4).
 
 Suggested reply:
 
@@ -40,9 +40,9 @@ installing either library. They must apply it, rebuild, and validate their app.
 The video maps real Android emulator app footage onto a
 [Galaxy Z Fold 3 model by RHModels / CGTrader](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model).
 It is a device illustration, not a physical-device recording. The model follows
-the native angle readout extracted from the app recording.
+a lightly smoothed curve extracted from the native angle readout in the app recording. The library readings and app footage stay unfiltered.
 
-The app runs on the owned API 34 emulator `emulator-5590`, with React Native
+The app runs on the owned API 34 emulator `emulator-5592`, with React Native
 `0.88.0-rc.1`, Reanimated `4.7.0`, Worklets `0.13.0` plus the example FIFO patch,
 and npm-installed reserved regions `0.1.0-alpha.2`. Hinges and the example use
 local repository source. The recording uses the native Fabric observer implementation and example
@@ -65,13 +65,13 @@ APIs; the video does not use the app's simulated preview. The regions API report
 occlusion geometry and does not identify a camera.
 
 The scrcpy recording is cropped to remove the Android taskbar and converted to
-24 fps for the render using the source timing, with the final static frame held. Output frame rate is not native event frequency. The camera moves through
+60 fps for the render using the source timing, with the final static frame held. The app viewport matches the model display aspect ratio, so the screen content keeps its proportions. A Gaussian filter with a 0.16-second standard deviation smooths only the illustrated phone angle. Output frame rate is not native event frequency. The move from the fold close-up to the camera close-up takes two seconds. The camera moves through
 a fold sequence and two close-ups; it does not establish hardware performance or
 continuous iOS hinge-angle delivery.
 
 ## Retained evidence
 
-The task's `fold-showcase-v3/` artifact directory retains the source capture,
+The task's `fold-showcase-v4/` artifact directory retains the source capture,
 input and tab logs, audited texture, OCR angle readings, rendering scripts,
 final video, poster, and provenance. The original alpha.2 capture remains under
 `alpha2-demo/android/`; it is superseded for the launch video.

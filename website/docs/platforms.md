@@ -5,7 +5,7 @@ description: How UIKit, WindowManager, and hinge sensors map to the API.
 
 ## iOS
 
-Hinge observation uses `UIHingeInteraction` on the React root's view hierarchy. A native update supplies zero or one `UIHinge`. UIKit's status maps to the public strings, and its angle is exposed in radians.
+Hinge observation uses `UIHingeInteraction`. The core hook attaches it to the React root's view hierarchy; the [Reanimated provider](./reanimated.md) attaches its own to the hidden `HingesObserverView` it renders. A native update supplies zero or one `UIHinge`. UIKit's status maps to the public strings, and its angle is exposed in radians.
 
 | UIKit status   | Public status   |
 | -------------- | --------------- |
@@ -34,7 +34,7 @@ The host app must adopt the UIScene lifecycle; the example uses `UISceneDelegate
 
 ## Android
 
-The native module observes Jetpack WindowManager folding features for its Activity window and, on API 30 or later, the optional device-level `TYPE_HINGE_ANGLE` sensor for angle. The combined snapshot is associated with that root's hierarchy; the two native sources do not have identical scope.
+The library observes Jetpack WindowManager folding features for its Activity window and, on API 30 or later, the optional device-level `TYPE_HINGE_ANGLE` sensor for angle. The native module runs that observation for a React root; the [Reanimated provider](./reanimated.md) runs the same observation from its hidden `HingesObserverView` while that view is attached. The combined snapshot is associated with the observing hierarchy; the two native sources do not have identical scope.
 
 | WindowManager state   | Public status   |
 | --------------------- | --------------- |

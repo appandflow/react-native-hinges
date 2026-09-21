@@ -1,7 +1,5 @@
 #import "HingesModule.h"
 
-#import <React/RCTComponentEvent.h>
-#import <React/RCTEventDispatcherProtocol.h>
 #import <React/RCTFabricSurface.h>
 #import <React/RCTSurfacePresenter.h>
 #import <React/RCTSurfaceView.h>
@@ -23,7 +21,6 @@
   NSMutableDictionary<NSNumber *, HingeRootObservation *> *_observations;
   NSMutableDictionary<NSNumber *, NSArray<NSDictionary *> *> *_snapshots;
   std::atomic<bool> _invalidated;
-  __weak id<RCTEventDispatcherObserver> _reanimatedObserver;
   __weak RCTSurfacePresenter *_surfacePresenter;
 }
 
@@ -31,8 +28,6 @@
 {
   return @"NativeHinges";
 }
-
-@synthesize moduleRegistry = _moduleRegistry;
 
 + (BOOL)requiresMainQueueSetup
 {
@@ -64,12 +59,7 @@
 - (void)emitSnapshotForRoot:(NSNumber *)rootTag hinges:(NSArray<NSDictionary *> *)hinges
 {
   if (_invalidated) return;
-  NSDictionary *body = @{@"rootTag": rootTag, @"hinges": hinges};
-  id<RCTEventDispatcherProtocol> dispatcher = [_moduleRegistry moduleForName:"EventDispatcher"];
-  [dispatcher notifyObserversOfEvent:[[RCTComponentEvent alloc] initWithName:@"onHingesChange"
-                                                                  viewTag:rootTag
-                                                                     body:body]];
-  [self emitOnHingesChange:body];
+  [self emitOnHingesChange:@{@"rootTag": rootTag, @"hinges": hinges}];
 }
 
 - (void)updateRoot:(NSNumber *)rootTag
@@ -88,13 +78,6 @@
 {
   RCTExecuteOnMainQueue(^{
     if (self->_invalidated) return;
-    id reanimated = [self->_moduleRegistry moduleForName:"ReanimatedModule" lazilyLoadIfNecessary:NO];
-    if (reanimated != self->_reanimatedObserver && [reanimated conformsToProtocol:@protocol(RCTEventDispatcherObserver)]) {
-      // Reanimated 4.7 registers in setBridge before RN 0.88 injects its module registry.
-      id<RCTEventDispatcherProtocol> dispatcher = [self->_moduleRegistry moduleForName:"EventDispatcher"];
-      [dispatcher addDispatchObserver:reanimated];
-      self->_reanimatedObserver = reanimated;
-    }
     NSNumber *tag = @(rootTag);
     HingeRootObservation *observation = self->_observations[tag];
     if (observation == nil) {

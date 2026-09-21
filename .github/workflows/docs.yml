@@ -43,6 +43,14 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build documentation
         run: pnpm run docs:build
+      - name: Download demo videos
+        run: |
+          mkdir -p website/build/demo
+          for video in fold-showcase.mp4 fold-showcase-v2.mp4 fold-showcase-v3.mp4; do
+            curl --fail --location --retry 3 \
+              --output "website/build/demo/$video" \
+              "https://github.com/appandflow/react-native-hinges/releases/download/demo-2026-09-21/$video"
+          done
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:

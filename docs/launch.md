@@ -13,7 +13,7 @@ dist-tags before posting. This document does not authorize posting to X.
 > Here they are together in Field Notes. New Architecture, Reanimated support,
 > and alpha releases available now.
 
-Attach the [folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v2.mp4).
+Attach the [folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v3.mp4).
 
 Suggested reply:
 
@@ -45,32 +45,34 @@ the native angle readout extracted from the app recording.
 The app runs on the owned API 34 emulator `emulator-5590`, with React Native
 `0.88.0-rc.1`, Reanimated `4.7.0`, Worklets `0.13.0` plus the example FIFO patch,
 and npm-installed reserved regions `0.1.0-alpha.2`. Hinges and the example use
-local repository source. The stronger motion and mirrored landscape are example
+local repository source. The recording uses the native Fabric observer implementation and example
 changes made after the alpha.2 library release.
 
-- Native angle sweeps from 180° through 120°, 90°, and 60°, then back to 180°.
+- Native angle sweeps from 180° through 120° to 90°, then back to 180°.
   The journal number, headline, body, and footer fade and slide toward the outer
-  edge. The sun stays away from the fold.
+  edge. The sun stays away from the fold, and the landscape colors shift into
+  sunset as it lowers.
 - The emulator remains in half-open posture so the measured division stays
-  present throughout. The fold close-up holds a recorded frame.
+  present throughout. A continuous camera move brings the fold into view, then
+  moves toward the camera cutout as the phone opens.
 - Journal, Map, and Moments switch in the camera close-up. The toolbar uses the
-  clear spans around native occlusion bounds, adding 12 dp of clearance.
+  clear spans around native occlusion bounds, adding 12 dp of clearance. Its
+  selection slides and resizes, clipped out of the cutout gap.
 
 The emulator console supplies hinge-angle input. Native Android display-feature
 and cutout overrides supply the fixture geometry. The app reads those native
 APIs; the video does not use the app's simulated preview. The regions API reports
 occlusion geometry and does not identify a camera.
 
-The host recording is cropped to remove letterboxing and the Android taskbar,
-restored to the app viewport's aspect ratio, and converted to 24 fps for the
-render. Output frame rate is not native event frequency. The video is edited into
+The scrcpy recording is cropped to remove the Android taskbar and converted to
+24 fps for the render using the source timing, with the final static frame held. Output frame rate is not native event frequency. The camera moves through
 a fold sequence and two close-ups; it does not establish hardware performance or
 continuous iOS hinge-angle delivery.
 
 ## Retained evidence
 
-The task's `fold-showcase-v2/` artifact directory retains the source capture,
-input and tab logs, corrected texture, OCR angle readings, rendering scripts,
+The task's `fold-showcase-v3/` artifact directory retains the source capture,
+input and tab logs, audited texture, OCR angle readings, rendering scripts,
 final video, poster, and provenance. The original alpha.2 capture remains under
 `alpha2-demo/android/`; it is superseded for the launch video.
 
@@ -82,7 +84,8 @@ has not yet been verified.
 ## Alt text
 
 A 3D Galaxy Z Fold 3 displays the Field Notes travel journal. As the phone folds,
-the right page's large number and text fade and slide outward. The illustrated sun
+the right page's large number and text fade and slide outward while the landscape
+turns from daylight green to a coral sunset. The illustrated sun
 sits near the left outer edge. A close-up highlights the gap between the pages.
 Another close-up shows Journal, Map, and Moments tabs switching while keeping a
 gap around the camera. The screen names react-native-hinges and

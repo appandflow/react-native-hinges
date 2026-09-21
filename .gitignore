@@ -89,3 +89,7 @@ nitrogen/
 website/build/
 website/.docusaurus/
 artifacts/
+
+*.mp4
+*.webm
+*.mov

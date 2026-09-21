@@ -47,10 +47,14 @@ The example opens **Field Notes**, a two-page travel journal using both librarie
 - A full-screen provider splits the Journal / Map / Moments toolbar around native
   occlusion bounds, with a 12-point gap. The tabs use the clear spans on either
   side; amber outlines show measured rectangles. The API does not identify what
-  causes an occlusion.
+  causes an occlusion. The selection slides and resizes between measured tab
+  bounds, clipped to the clear spans so it stays out of the camera gap. Reduced
+  motion switches the selection immediately.
 - `useAnimatedHinges()` drives lighting and fades the journal number, headline,
   body, and footer while sliding them toward the outer edge between 160° and 80°.
   The mirrored landscape keeps the sun near the outer edge, clear of the fold.
+  As it lowers, the sky, sun, mountains, and lake shift from daylight greens
+  through a coral sunset into purple dusk.
   The pages stay geometrically flat; the physical screen
   supplies perspective. Reduced motion disables translation. When the angle is
   unavailable, the artwork appears open; the underlying reading remains `null`.
@@ -63,7 +67,7 @@ recording; tap it again to restore them. Hiding the controls also selects native
 
 The example installs `react-native-reserved-regions@0.1.0-alpha.2` from npm.
 
-[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v2.mp4). The 32-second video maps native Android emulator footage onto a [Galaxy Z Fold 3 model by RHModels](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model). The model follows the recorded native angle; close-ups highlight the fold region and show the toolbar switching tabs around camera clearance. The recording uses the example Worklets patch and npm-installed reserved regions alpha.2. The illustrated device is not a physical-device recording.
+[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v3.mp4). The 34-second video maps native Android emulator footage onto a [Galaxy Z Fold 3 model by RHModels](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model). The model follows the recorded native angle; continuous camera moves reveal the fold region and the toolbar switching tabs around camera clearance. Callouts fade in as each move settles. The video is stored as a release asset and included in the website deployment; video binaries stay outside the source tree. The recording uses local Hinges and example source after alpha.2, the example Worklets patch, and npm-installed reserved regions alpha.2. The illustrated device is not a physical-device recording.
 
 ## Sensor Lab
 

@@ -18,9 +18,12 @@ jest.mock('../HingesModule', () => ({
   __esModule: true,
   default: {
     getSnapshot: jest.fn((root: number) => ({ hinges: mockSnapshots.get(root) ?? [] })),
+    // Native replays the current snapshot asynchronously after startObserving.
     startObserving: jest.fn((rootTag: number) => {
-      const hinges = mockSnapshots.get(rootTag) ?? [];
-      for (const listener of mockListeners) listener({ rootTag, hinges });
+      queueMicrotask(() => {
+        const hinges = mockSnapshots.get(rootTag) ?? [];
+        for (const listener of mockListeners) listener({ rootTag, hinges });
+      });
     }),
     stopObserving: jest.fn(),
     onHingesChange: jest.fn((listener: (event: HingesChangeEvent) => void) => {
@@ -152,12 +155,15 @@ it('throws a clear error when useHinges renders without a RootTagContext provide
   }
 });
 
-it('delivers state that changed between observer creation and subscription via the startObserving replay', () => {
+it('delivers state that changed between observer creation and subscription via the startObserving replay', async () => {
   const observer = createHingeObserver(1);
   expect(observer.get()).toEqual([]);
   mockSnapshots.set(1, native);
   const listener = jest.fn();
   const off = observer.subscribe(listener);
+  expect(observer.get()).toEqual([]);
+  expect(listener).not.toHaveBeenCalled();
+  await Promise.resolve();
   expect(NativeHinges.getSnapshot).toHaveBeenCalledTimes(1);
   expect(observer.get()).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
   expect(listener).toHaveBeenCalledTimes(1);

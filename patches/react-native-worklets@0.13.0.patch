@@ -1,0 +1,69 @@
+diff --git a/Common/cpp/worklets/Tools/UIScheduler.cpp b/Common/cpp/worklets/Tools/UIScheduler.cpp
+index 87a32da7ae0f469049751dcfe88cb57d4267b071..f5510e038840f1227123840cb7b9ce28bd6a5cb0 100644
+--- a/Common/cpp/worklets/Tools/UIScheduler.cpp
++++ b/Common/cpp/worklets/Tools/UIScheduler.cpp
+@@ -12,6 +12,14 @@ void UIScheduler::scheduleOnUI(std::function<void()> job) {
+ }
+ 
+ void UIScheduler::triggerUI() {
++  if (drainingUI_) {
++    return;
++  }
++  drainingUI_ = true;
++  struct ResetDraining {
++    bool &draining;
++    ~ResetDraining() { draining = false; }
++  } reset{drainingUI_};
+   scheduledOnUI_ = false;
+   while (!uiJobs_.empty()) {
+     const auto job = uiJobs_.pop();
+diff --git a/Common/cpp/worklets/Tools/UIScheduler.h b/Common/cpp/worklets/Tools/UIScheduler.h
+index 1ea3e8e4d3724040f80bdd28b8c29cc2af09501b..62aef031077bb70c6bf56f052dec30a082b32056 100644
+--- a/Common/cpp/worklets/Tools/UIScheduler.h
++++ b/Common/cpp/worklets/Tools/UIScheduler.h
+@@ -18,6 +18,7 @@ class UIScheduler {
+  protected:
+   virtual bool queryIsOnUIThread() const = 0;
+ 
++  bool drainingUI_{false};
+   std::atomic<bool> scheduledOnUI_{false};
+   ThreadSafeQueue<std::function<void()>> uiJobs_;
+ };
+diff --git a/android/src/main/cpp/worklets/android/AndroidUIScheduler.cpp b/android/src/main/cpp/worklets/android/AndroidUIScheduler.cpp
+index 2b93eced74a582484584d1a34cedd63360cd69d9..fab1b0dfde95591cb3b9b6f6af6d6fa59ec83ab8 100644
+--- a/android/src/main/cpp/worklets/android/AndroidUIScheduler.cpp
++++ b/android/src/main/cpp/worklets/android/AndroidUIScheduler.cpp
+@@ -25,11 +25,11 @@ class UISchedulerWrapper : public UIScheduler {
+   }
+ 
+   void scheduleOnUI(std::function<void()> job) override {
++    UIScheduler::scheduleOnUI(std::move(job));
+     if (isOnUIThread()) {
+-      job();
++      triggerUI();
+       return;
+     }
+-    UIScheduler::scheduleOnUI(job);
+     if (!scheduledOnUI_) {
+       scheduledOnUI_ = true;
+       static const auto method = androidUiScheduler_->getClass()->getMethod<void()>("scheduleTriggerOnUI");
+diff --git a/apple/worklets/apple/IOSUIScheduler.mm b/apple/worklets/apple/IOSUIScheduler.mm
+index 429548e28c54c226f488673b0ab6ae3b8479d1f8..b6e45dd05dc3a23b066f574ea79e03f5c15ae7af 100644
+--- a/apple/worklets/apple/IOSUIScheduler.mm
++++ b/apple/worklets/apple/IOSUIScheduler.mm
+@@ -15,13 +15,12 @@
+ 
+ void IOSUIScheduler::scheduleOnUI(std::function<void()> job)
+ {
++  UIScheduler::scheduleOnUI(std::move(job));
+   if (isOnUIThread()) {
+-    job();
++    triggerUI();
+     return;
+   }
+ 
+-  UIScheduler::scheduleOnUI(job);
+-
+   if (!scheduledOnUI_) {
+     dispatch_async(dispatch_get_main_queue(), [weakThis = weak_from_this()] {
+       // Before triggering the UI, we check if the weak pointer is still valid to avoid possible dangling pointer

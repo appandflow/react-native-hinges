@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ReservedRegionsProvider, useReservedRegions } from 'react-native-reserved-regions';
+import { ReservedRegionsProvider, useReservedRegions, useReservedRegionsReady } from 'react-native-reserved-regions';
+import { useHinges } from 'react-native-hinges';
 import { useAnimatedHinges } from 'react-native-hinges/reanimated';
 import Animated, {
   cancelAnimation,
@@ -41,13 +42,7 @@ export function FieldNotes({ onOpenLab }: { onOpenLab: () => void }) {
       <ReservedRegionsProvider onLayout={(event) => setWidth(event.nativeEvent.layout.width)} style={styles.spread}>
         <Spread width={width} preview={preview} />
       </ReservedRegionsProvider>
-      <View style={styles.row}>
-        <View style={styles.badge}>
-          <View style={[styles.dot, preview && styles.previewDot]} />
-          <Text style={styles.badgeText}>{preview ? 'SIMULATED ANGLE' : 'NATIVE HINGE'}</Text>
-        </View>
-        <Text style={styles.volume}>48° N / 71° W</Text>
-      </View>
+      <HingeReadout preview={preview} />
       <Text style={styles.description}>
         Open a little. Let the light in. Your journal follows the fold, with room for every word.
       </Text>
@@ -69,8 +64,27 @@ export function FieldNotes({ onOpenLab }: { onOpenLab: () => void }) {
   );
 }
 
+function HingeReadout({ preview }: { preview: boolean }) {
+  const hinge = useHinges()[0];
+  const nativeAngle = hinge?.angle;
+  return (
+    <View style={styles.row}>
+      <View style={styles.badge}>
+        <View style={[styles.dot, !hinge && styles.unavailableDot, preview && styles.previewDot]} />
+        <Text style={styles.badgeText}>
+          {preview ? 'SIMULATED ANGLE' : hinge ? 'NATIVE HINGE' : 'NO HINGE READING'}
+        </Text>
+      </View>
+      <Text style={styles.volume}>
+        {nativeAngle == null ? 'NATIVE ANGLE UNAVAILABLE' : `NATIVE ${((nativeAngle * 180) / Math.PI).toFixed(1)}°`}
+      </Text>
+    </View>
+  );
+}
+
 function Spread({ width, preview }: { width: number; preview: boolean }) {
   const regions = useReservedRegions();
+  const regionsReady = useReservedRegionsReady();
   const hinges = useAnimatedHinges();
   const reducedMotion = useReducedMotion();
   const previewAngle = useSharedValue(Math.PI);
@@ -112,8 +126,23 @@ function Spread({ width, preview }: { width: number; preview: boolean }) {
   }));
   return (
     <>
-      {width > 0 && (
+      {width > 0 && regionsReady && (
         <>
+          {seam && (
+            <View pointerEvents="none" style={styles.divisionGuide}>
+              <View
+                style={[
+                  styles.divisionMarker,
+                  {
+                    left: seam.x,
+                    top: seam.y,
+                    width: Math.max(StyleSheet.hairlineWidth, seam.width),
+                    height: seam.height,
+                  },
+                ]}
+              />
+            </View>
+          )}
           <Animated.View style={[styles.page, styles.landscape, { width: leftWidth }, landscapeStyle]}>
             <Text style={styles.pageLabel}>A PLACE TO EXHALE</Text>
             <Animated.View style={[styles.sun, sunStyle]} />
@@ -141,7 +170,13 @@ function Spread({ width, preview }: { width: number; preview: boolean }) {
         </>
       )}
       <View style={styles.regionCaption}>
-        <Text style={styles.regionText}>{division ? 'TWO PAGES · NATIVE FOLD' : 'ONE DISPLAY · OPEN JOURNAL'}</Text>
+        <Text style={styles.regionText}>
+          {!regionsReady
+            ? 'MEASURING REGIONS'
+            : division
+              ? 'TWO PAGES · NATIVE FOLD'
+              : 'REGIONS READY · NO PAGE DIVISION'}
+        </Text>
       </View>
     </>
   );
@@ -154,7 +189,9 @@ const styles = StyleSheet.create({
   edition: { color: '#829c8d', fontSize: 8, letterSpacing: 1.2 },
   heading: { color: '#eef0e3', fontSize: 37, fontWeight: '500', letterSpacing: -1.8 },
   subtitle: { color: '#a6b7a6', fontSize: 13, lineHeight: 20, marginTop: 8 },
-  spread: { height: 376 },
+  spread: { height: 376, marginTop: 16 },
+  divisionGuide: { position: 'absolute', left: 0, right: 0, top: 0, height: 344, overflow: 'hidden' },
+  divisionMarker: { position: 'absolute', backgroundColor: '#c3e1a0', opacity: 0.35 },
   page: { position: 'absolute', top: 0, height: 344, overflow: 'hidden', borderRadius: 12, padding: 17 },
   landscape: { left: 0, transformOrigin: 'right center' },
   pageLabel: { fontSize: 8, letterSpacing: 1.1, color: '#274638', zIndex: 2, fontWeight: '700' },
@@ -204,6 +241,7 @@ const styles = StyleSheet.create({
   badge: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#c3e1a0' },
   previewDot: { backgroundColor: '#edc278' },
+  unavailableDot: { backgroundColor: '#819580' },
   badgeText: { color: '#c3d2b9', fontSize: 9, letterSpacing: 1.3 },
   volume: { color: '#819580', fontSize: 10, letterSpacing: 1.4 },
   description: { color: '#c0cdb8', fontSize: 15, lineHeight: 23, maxWidth: 360 },

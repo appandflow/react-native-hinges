@@ -111,6 +111,18 @@ Reserved layout geometry lives in the separate
 [react-native-reserved-regions](https://github.com/appandflow/react-native-reserved-regions)
 package. A hinge reading is not a division rectangle.
 
+### Readiness-gated animated content
+
+On the tested RN `0.88.0-rc.1` Android stack, conditionally mounting Reanimated
+`4.7.0` content when `useReservedRegionsReady()` becomes true can throw
+`__requestMapperRunFinalizer` is undefined: Worklets `0.13.0` can run synchronous
+UI work ahead of queued mapper initialization. The combined hinges example uses
+an [example-only Worklets FIFO patch](https://github.com/appandflow/react-native-hinges/blob/main/patches/react-native-worklets%400.13.0.patch).
+Installing either library does not patch a consuming app's Worklets dependency.
+Keeping the animated subtree mounted avoided this failure in the tested case;
+apps that gate its mount need to apply the patch, rebuild the native app, and
+validate it themselves.
+
 ## Development
 
 ```sh

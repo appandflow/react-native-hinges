@@ -65,6 +65,18 @@ The Reanimated integration applies no interpolation, smoothing, JavaScript-side 
 
 The demo's simulated preview is generated animation. Its raw/smoothed switch changes the artwork; it does not change native sensor values. A simulator sample is specific to that device profile and input sequence, not a hardware performance guarantee.
 
+### Readiness-gated animated content
+
+On the tested RN `0.88.0-rc.1` Android stack, conditionally mounting Reanimated
+`4.7.0` content when `useReservedRegionsReady()` becomes true can throw
+`__requestMapperRunFinalizer` is undefined: Worklets `0.13.0` can run synchronous
+UI work ahead of queued mapper initialization. The combined hinges example uses
+an [example-only Worklets FIFO patch](https://github.com/appandflow/react-native-hinges/blob/main/patches/react-native-worklets%400.13.0.patch).
+Installing either library does not patch a consuming app's Worklets dependency.
+Keeping the animated subtree mounted avoided this failure in the tested case;
+apps that gate its mount need to apply the patch, rebuild the native app, and
+validate it themselves.
+
 ## Lifetime and validation limits
 
 Unmounting unregisters the root-tag event handler and releases the native subscription. An externally retained shared value keeps its last snapshot. The native cache is cleared when the root has no subscribers.

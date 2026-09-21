@@ -44,9 +44,12 @@ The example opens **Field Notes**, a two-page travel journal using both librarie
 - `react-native-reserved-regions` positions the pages around a native vertical
   division within the journal's bounded provider. Its caption changes to
   **TWO PAGES · NATIVE FOLD** when that division is present.
-- `useAnimatedHinges()` drives the pages' perspective and lighting from the native
-  angle. When the angle is unavailable, the artwork appears open; the underlying
-  reading remains `null`.
+- A full-screen provider places the header controls beside native occlusion bounds,
+  with a 12-point gap. Amber outlines show the measured rectangles.
+- `useAnimatedHinges()` drives lighting and fades/slides secondary journal text
+  between 120° and 60°. The pages stay geometrically flat; the physical screen
+  supplies perspective. Reduced motion disables translation. When the angle is
+  unavailable, the artwork appears open; the underlying reading remains `null`.
 
 Native input is the default, labeled **NATIVE HINGE**. **Preview motion** generates
 an angle for the artwork and displays **SIMULATED ANGLE**; **Use native angle**
@@ -60,7 +63,7 @@ exact dependency revision's build during `pnpm install`.
 
 ## Sensor Lab
 
-Select **Sensor lab →** to open the numeric readings and diagnostic controls.
+Select **Sensor lab ↗** to open the numeric readings and diagnostic controls.
 **Back to Field Notes** returns to the journal. The lab exposes the native reading
 and the animation separately:
 

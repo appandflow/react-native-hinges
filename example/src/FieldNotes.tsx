@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ReservedRegionsProvider, useReservedRegions, useReservedRegionsReady } from 'react-native-reserved-regions';
 import { useHinges } from 'react-native-hinges';
@@ -17,50 +17,99 @@ import Animated, {
 } from 'react-native-reanimated';
 
 export function FieldNotes({ onOpenLab }: { onOpenLab: () => void }) {
+  const [viewportWidth, setViewportWidth] = useState(0);
+  return (
+    <ReservedRegionsProvider
+      style={styles.screen}
+      onLayout={(event) => setViewportWidth(event.nativeEvent.layout.width)}
+    >
+      <StatusBar hidden />
+      <FieldNotesContent viewportWidth={viewportWidth} onOpenLab={onOpenLab} />
+    </ReservedRegionsProvider>
+  );
+}
+
+function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number; onOpenLab: () => void }) {
   const insets = useSafeAreaInsets();
+  const regions = useReservedRegions();
+  const ready = useReservedRegionsReady();
+  const occlusions = regions.filter((region) => region.kind === 'occlusion');
+  const headerHeight = Math.max(64, insets.top + 16);
+  let spaces = [{ start: 24, end: viewportWidth - 24 }];
+  for (const { frame } of occlusions) {
+    if (frame.y >= headerHeight || frame.y + frame.height <= 0) continue;
+    spaces = spaces.flatMap((space) => {
+      if (frame.x - 12 >= space.end || frame.x + frame.width + 12 <= space.start) return [space];
+      return [
+        { start: space.start, end: Math.max(space.start, frame.x - 12) },
+        { start: Math.min(space.end, frame.x + frame.width + 12), end: space.end },
+      ];
+    });
+  }
+  const header = spaces.reduce((largest, space) =>
+    space.end - space.start > largest.end - largest.start ? space : largest,
+  );
   const [preview, setPreview] = useState(false);
   const [width, setWidth] = useState(0);
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={{
-        paddingTop: insets.top + 28,
-        paddingBottom: insets.bottom + 24,
-        paddingLeft: insets.left + 24,
-        paddingRight: insets.right + 24,
-        gap: 24,
-      }}
-    >
-      <View style={styles.row}>
-        <Text style={styles.brand}>FIELD NOTES</Text>
+    <>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={{
+          paddingTop: headerHeight + 28,
+          paddingBottom: insets.bottom + 24,
+          paddingLeft: insets.left + 24,
+          paddingRight: insets.right + 24,
+          gap: 24,
+        }}
+      >
         <Text style={styles.edition}>VOL. 01 / THE OUTDOORS</Text>
-      </View>
-      <View>
-        <Text style={styles.heading}>Room to wander.</Text>
-        <Text style={styles.subtitle}>A small journal for a wider world.</Text>
-      </View>
-      <ReservedRegionsProvider onLayout={(event) => setWidth(event.nativeEvent.layout.width)} style={styles.spread}>
-        <Spread width={width} preview={preview} />
-      </ReservedRegionsProvider>
-      <HingeReadout preview={preview} />
-      <Text style={styles.description}>
-        Open a little. Let the light in. Your journal follows the fold, with room for every word.
-      </Text>
-      <View style={styles.row}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ selected: preview }}
-          style={styles.button}
-          onPress={() => setPreview(!preview)}
-        >
-          <Text style={styles.buttonText}>{preview ? 'Use native angle' : 'Preview motion'} ↗</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" style={styles.labButton} onPress={onOpenLab}>
-          <Text style={styles.labText}>Sensor lab →</Text>
-        </Pressable>
-      </View>
-      <Text style={styles.credit}>react-native-hinges + react-native-reserved-regions</Text>
-    </ScrollView>
+        <View>
+          <Text style={styles.heading}>Room to wander.</Text>
+          <Text style={styles.subtitle}>A small journal for a wider world.</Text>
+          {ready && occlusions.length > 0 && (
+            <Text style={styles.occlusionCaption}>RESERVED SPACE · CONTROLS CLEAR</Text>
+          )}
+        </View>
+        <ReservedRegionsProvider onLayout={(event) => setWidth(event.nativeEvent.layout.width)} style={styles.spread}>
+          <Spread width={width} preview={preview} />
+        </ReservedRegionsProvider>
+        <HingeReadout preview={preview} />
+        <Text style={styles.description}>
+          Open a little. Let the light in. Your journal follows the fold, with room for every word.
+        </Text>
+        <View style={styles.row}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: preview }}
+            style={styles.button}
+            onPress={() => setPreview(!preview)}
+          >
+            <Text style={styles.buttonText}>{preview ? 'Use native angle' : 'Preview motion'} ↗</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.credit}>react-native-hinges + react-native-reserved-regions</Text>
+      </ScrollView>
+      {ready && header.end > header.start && (
+        <View style={[styles.header, { left: header.start, width: header.end - header.start, height: headerHeight }]}>
+          {header.end - header.start >= 240 && <Text style={styles.brand}>FIELD NOTES</Text>}
+          <Pressable accessibilityRole="button" style={styles.labButton} onPress={onOpenLab}>
+            <Text numberOfLines={1} style={styles.labText}>
+              Sensor lab ↗
+            </Text>
+          </Pressable>
+        </View>
+      )}
+      {occlusions.map(({ frame }, index) => (
+        <View
+          key={index}
+          pointerEvents="none"
+          accessible
+          accessibilityLabel={`Native occlusion bounds: x ${frame.x}, y ${frame.y}, width ${frame.width}, height ${frame.height}`}
+          style={[styles.occlusionOutline, { left: frame.x, top: frame.y, width: frame.width, height: frame.height }]}
+        />
+      ))}
+    </>
   );
 }
 
@@ -113,13 +162,15 @@ function Spread({ width, preview }: { width: number; preview: boolean }) {
     Math.max(0, Math.min(Math.PI, preview ? previewAngle.get() : (hinges.get()[0]?.angle ?? Math.PI))),
   );
   const landscapeStyle = useAnimatedStyle(() => ({
-    transform: [{ perspective: 1200 }, { rotateY: `${reducedMotion ? 0 : (Math.PI - angle.get()) * 0.22}rad` }],
     backgroundColor: interpolateColor(angle.get(), [0, Math.PI], ['#384c59', '#abc9ba']),
   }));
   const journalStyle = useAnimatedStyle(() => ({
-    transform: [{ perspective: 1200 }, { rotateY: `${reducedMotion ? 0 : -(Math.PI - angle.get()) * 0.22}rad` }],
     backgroundColor: interpolateColor(angle.get(), [0, Math.PI], ['#b2ac92', '#f2ebd7']),
   }));
+  const detailsStyle = useAnimatedStyle(() => {
+    const opacity = Math.max(0, Math.min(1, (angle.get() - Math.PI / 3) / (Math.PI / 3)));
+    return { opacity, transform: [{ translateY: reducedMotion ? 0 : (1 - opacity) * 20 }] };
+  });
   const sunStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: reducedMotion ? 0 : (1 - angle.get() / Math.PI) * 50 }],
     opacity: 0.45 + (angle.get() / Math.PI) * 0.55,
@@ -154,18 +205,18 @@ function Spread({ width, preview }: { width: number; preview: boolean }) {
               <Text style={styles.location}>SAGUENAY / QUÉBEC</Text>
             </View>
           </Animated.View>
-          <Animated.View
-            style={[styles.page, styles.journal, { left: rightX, width: Math.max(0, width - rightX) }, journalStyle]}
-          >
+          <Animated.View style={[styles.page, { left: rightX, width: Math.max(0, width - rightX) }, journalStyle]}>
             <Text style={styles.journalLabel}>THE WEEKEND EDIT</Text>
             <Text style={styles.number}>01</Text>
             <Text style={styles.journalTitle}>Take the{'\n'}long way.</Text>
-            <View style={styles.rule} />
-            <Text style={styles.journalBody}>Pine air. Still water. No particular hurry.</Text>
-            <View style={styles.journalFooter}>
+            <Animated.View style={detailsStyle}>
+              <View style={styles.rule} />
+              <Text style={styles.journalBody}>Pine air. Still water. No particular hurry.</Text>
+            </Animated.View>
+            <Animated.View style={[styles.journalFooter, detailsStyle]}>
               <Text style={styles.journalLabel}>WALK / PAUSE / REPEAT</Text>
               <Text style={styles.arrow}>↗</Text>
-            </View>
+            </Animated.View>
           </Animated.View>
         </>
       )}
@@ -184,6 +235,22 @@ function Spread({ width, preview }: { width: number; preview: boolean }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#172521' },
+  header: {
+    position: 'absolute',
+    top: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#172521',
+  },
+  occlusionOutline: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: '#edc278',
+    backgroundColor: '#edc27815',
+    boxShadow: '0 0 18px #edc27880',
+  },
+  occlusionCaption: { color: '#edc278', fontSize: 8, letterSpacing: 1.5, marginTop: 14 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
   brand: { color: '#e9eddb', fontSize: 12, letterSpacing: 3, fontWeight: '700' },
   edition: { color: '#829c8d', fontSize: 8, letterSpacing: 1.2 },
@@ -193,7 +260,7 @@ const styles = StyleSheet.create({
   divisionGuide: { position: 'absolute', left: 0, right: 0, top: 0, height: 344, overflow: 'hidden' },
   divisionMarker: { position: 'absolute', backgroundColor: '#c3e1a0', opacity: 0.35 },
   page: { position: 'absolute', top: 0, height: 344, overflow: 'hidden', borderRadius: 12, padding: 17 },
-  landscape: { left: 0, transformOrigin: 'right center' },
+  landscape: { left: 0 },
   pageLabel: { fontSize: 8, letterSpacing: 1.1, color: '#274638', zIndex: 2, fontWeight: '700' },
   sun: {
     position: 'absolute',
@@ -228,7 +295,6 @@ const styles = StyleSheet.create({
   landscapeFooter: { position: 'absolute', bottom: 22, left: 17, right: 10, gap: 18 },
   destination: { color: '#eef1d8', fontSize: 29, fontWeight: '500', letterSpacing: -0.8, lineHeight: 32 },
   location: { color: '#b4cbbc', fontSize: 8, letterSpacing: 1 },
-  journal: { transformOrigin: 'left center' },
   journalLabel: { color: '#667461', fontSize: 8, letterSpacing: 1, lineHeight: 12 },
   number: { color: '#98a085', fontSize: 50, fontWeight: '300', letterSpacing: -3, marginTop: 10 },
   journalTitle: { color: '#294133', fontSize: 25, lineHeight: 29, fontWeight: '500', letterSpacing: -0.8 },
@@ -247,7 +313,15 @@ const styles = StyleSheet.create({
   description: { color: '#c0cdb8', fontSize: 15, lineHeight: 23, maxWidth: 360 },
   button: { minHeight: 44, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 13, backgroundColor: '#d1e5b2' },
   buttonText: { color: '#284031', fontSize: 12, fontWeight: '600' },
-  labButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
-  labText: { color: '#a7bda2', fontSize: 12 },
+  labButton: {
+    maxWidth: '100%',
+    marginLeft: 'auto',
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    borderRadius: 24,
+    backgroundColor: '#edc278',
+  },
+  labText: { color: '#284031', fontSize: 12, fontWeight: '600' },
   credit: { color: '#758b77', fontSize: 9, lineHeight: 15 },
 });

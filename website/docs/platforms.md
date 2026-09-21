@@ -52,4 +52,4 @@ A supported device can report posture without angle readings. Sensor and WindowM
 
 ## Other platforms
 
-The fallback renders a React Native `View` without native observations. Consumers receive `[]`. There is no browser hinge sensor integration.
+The fallback module returns `[]` and creates no native view. There is no browser hinge sensor integration.

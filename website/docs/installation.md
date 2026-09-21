@@ -5,9 +5,15 @@ description: Try the native hinge API and check platform requirements.
 
 `react-native-hinges` exposes hinge posture and angles through a provider-free React hook, with a snapshot and subscription API for code outside React.
 
-## Preview status
+## Install the alpha
 
-The implementation is in development. The published `0.1.0-alpha.0` package on npm, including the `next` tag, is a name-reservation placeholder and does not include this API. These docs describe the repository source. [Run the example from source](./example.md) to try the current implementation.
+`0.1.0-alpha.1` is the functional release candidate. The installation command below applies after publication is verified; until then, [run the example from source](./example.md).
+
+```sh
+npm install react-native-hinges@0.1.0-alpha.1
+```
+
+Install iOS pods and rebuild the native app. The explicit version above avoids the old `0.1.0-alpha.0` name-reservation placeholder. This alpha's supported test configuration and limitations are listed below. [Run the example](./example.md) to explore native and animated readings.
 
 ## Requirements
 

@@ -2,8 +2,18 @@
 
 Hinge posture and angle observations for React Native's New Architecture.
 
-`0.1.0-alpha.0` is a name-reservation placeholder. The API below is under
-development in this repository; it is not implemented by that npm release.
+## Installation
+
+`0.1.0-alpha.1` is the functional release candidate. Use the command below once
+publication is verified; until then, run the repository example.
+
+```sh
+npm install react-native-hinges@0.1.0-alpha.1
+```
+
+Install iOS pods and rebuild your native app. This is an early alpha; see the
+platform requirements below. The older `0.1.0-alpha.0` is only a name-reservation
+placeholder and does not implement these APIs.
 
 ## Requirements
 

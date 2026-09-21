@@ -16,6 +16,35 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+const sections = {
+  Journal: {
+    title: 'Room to wander.',
+    subtitle: 'A small journal for a wider world.',
+    label: 'THE WEEKEND EDIT',
+    number: '01',
+    heading: 'Take the\nlong way.',
+    body: 'Pine air. Still water. No particular hurry.',
+  },
+  Map: {
+    title: 'Follow the quiet.',
+    subtitle: 'The lakeside loop, one step at a time.',
+    label: 'LAKESIDE LOOP',
+    number: '4.8',
+    heading: 'Kilometres\nto slow down.',
+    body: 'Easy terrain. Follow the shoreline back to camp.',
+  },
+  Moments: {
+    title: 'Keep a little light.',
+    subtitle: 'Small memories from a day outside.',
+    label: 'TODAY’S MEMORY',
+    number: '03',
+    heading: 'The light\nbefore dusk.',
+    body: 'A quiet shore, a warm sky, and nowhere else to be.',
+  },
+};
+type Section = keyof typeof sections;
+const sectionNames = Object.keys(sections) as Section[];
+
 export function FieldNotes({ onOpenLab }: { onOpenLab: () => void }) {
   const [viewportWidth, setViewportWidth] = useState(0);
   return (
@@ -46,9 +75,23 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
       ];
     });
   }
-  const header = spaces.reduce((largest, space) =>
-    space.end - space.start > largest.end - largest.start ? space : largest,
-  );
+  const usableSpaces = spaces.filter((space) => space.end - space.start >= 44);
+  const totalSpace = usableSpaces.reduce((total, space) => total + space.end - space.start, 0);
+  let nextSection = 0;
+  const toolbar = usableSpaces.map((space, index) => {
+    const count =
+      index === usableSpaces.length - 1
+        ? sectionNames.length - nextSection
+        : Math.min(
+            sectionNames.length - nextSection,
+            Math.max(1, Math.round((sectionNames.length * (space.end - space.start)) / totalSpace)),
+          );
+    const items = sectionNames.slice(nextSection, nextSection + count);
+    nextSection += count;
+    return { ...space, items };
+  });
+  const [section, setSection] = useState<Section>('Journal');
+  const entry = sections[section];
   const [preview, setPreview] = useState(false);
   const [width, setWidth] = useState(0);
   return (
@@ -65,14 +108,14 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
       >
         <Text style={styles.edition}>VOL. 01 / THE OUTDOORS</Text>
         <View>
-          <Text style={styles.heading}>Room to wander.</Text>
-          <Text style={styles.subtitle}>A small journal for a wider world.</Text>
+          <Text style={styles.heading}>{entry.title}</Text>
+          <Text style={styles.subtitle}>{entry.subtitle}</Text>
           {ready && occlusions.length > 0 && (
             <Text style={styles.occlusionCaption}>RESERVED SPACE · CONTROLS CLEAR</Text>
           )}
         </View>
         <ReservedRegionsProvider onLayout={(event) => setWidth(event.nativeEvent.layout.width)} style={styles.spread}>
-          <Spread width={width} preview={preview} />
+          <Spread width={width} preview={preview} section={section} />
         </ReservedRegionsProvider>
         <HingeReadout preview={preview} />
         <Text style={styles.description}>
@@ -87,19 +130,38 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
           >
             <Text style={styles.buttonText}>{preview ? 'Use native angle' : 'Preview motion'} ↗</Text>
           </Pressable>
+          <Pressable accessibilityRole="button" style={styles.labButton} onPress={onOpenLab}>
+            <Text style={styles.labText}>Sensor lab ↗</Text>
+          </Pressable>
         </View>
         <Text style={styles.credit}>react-native-hinges + react-native-reserved-regions</Text>
       </ScrollView>
-      {ready && header.end > header.start && (
-        <View style={[styles.header, { left: header.start, width: header.end - header.start, height: headerHeight }]}>
-          {header.end - header.start >= 240 && <Text style={styles.brand}>FIELD NOTES</Text>}
-          <Pressable accessibilityRole="button" style={styles.labButton} onPress={onOpenLab}>
-            <Text numberOfLines={1} style={styles.labText}>
-              Sensor lab ↗
-            </Text>
-          </Pressable>
-        </View>
-      )}
+      {ready &&
+        toolbar.map((space, index) => (
+          <View
+            key={index}
+            style={[styles.header, { left: space.start, width: space.end - space.start, height: headerHeight }]}
+          >
+            {index === 0 && space.end - space.start >= 148 + space.items.length * 84 && (
+              <Text numberOfLines={1} style={styles.brand}>
+                FIELD NOTES
+              </Text>
+            )}
+            {space.items.map((name) => (
+              <Pressable
+                key={name}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: section === name }}
+                style={[styles.tab, section === name && styles.selectedTab]}
+                onPress={() => setSection(name)}
+              >
+                <Text numberOfLines={1} style={[styles.tabText, section === name && styles.selectedTabText]}>
+                  {name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ))}
       {occlusions.map(({ frame }, index) => (
         <View
           key={index}
@@ -131,7 +193,8 @@ function HingeReadout({ preview }: { preview: boolean }) {
   );
 }
 
-function Spread({ width, preview }: { width: number; preview: boolean }) {
+function Spread({ width, preview, section }: { width: number; preview: boolean; section: Section }) {
+  const entry = sections[section];
   const regions = useReservedRegions();
   const regionsReady = useReservedRegionsReady();
   const hinges = useAnimatedHinges();
@@ -206,12 +269,12 @@ function Spread({ width, preview }: { width: number; preview: boolean }) {
             </View>
           </Animated.View>
           <Animated.View style={[styles.page, { left: rightX, width: Math.max(0, width - rightX) }, journalStyle]}>
-            <Text style={styles.journalLabel}>THE WEEKEND EDIT</Text>
-            <Text style={styles.number}>01</Text>
-            <Text style={styles.journalTitle}>Take the{'\n'}long way.</Text>
+            <Text style={styles.journalLabel}>{entry.label}</Text>
+            <Text style={styles.number}>{entry.number}</Text>
+            <Text style={styles.journalTitle}>{entry.heading}</Text>
             <Animated.View style={detailsStyle}>
               <View style={styles.rule} />
-              <Text style={styles.journalBody}>Pine air. Still water. No particular hurry.</Text>
+              <Text style={styles.journalBody}>{entry.body}</Text>
             </Animated.View>
             <Animated.View style={[styles.journalFooter, detailsStyle]}>
               <Text style={styles.journalLabel}>WALK / PAUSE / REPEAT</Text>
@@ -242,7 +305,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#172521',
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#829c8d40',
   },
+  tab: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+  },
+  selectedTab: { backgroundColor: '#edc278' },
+  tabText: { color: '#c0cdb8', fontSize: 13, fontWeight: '600' },
+  selectedTabText: { color: '#284031' },
   occlusionOutline: {
     position: 'absolute',
     borderWidth: 2,
@@ -252,7 +330,7 @@ const styles = StyleSheet.create({
   },
   occlusionCaption: { color: '#edc278', fontSize: 8, letterSpacing: 1.5, marginTop: 14 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
-  brand: { color: '#e9eddb', fontSize: 12, letterSpacing: 3, fontWeight: '700' },
+  brand: { flexShrink: 1, color: '#e9eddb', fontSize: 12, letterSpacing: 3, fontWeight: '700' },
   edition: { color: '#829c8d', fontSize: 8, letterSpacing: 1.2 },
   heading: { color: '#eef0e3', fontSize: 37, fontWeight: '500', letterSpacing: -1.8 },
   subtitle: { color: '#a6b7a6', fontSize: 13, lineHeight: 20, marginTop: 8 },
@@ -315,7 +393,6 @@ const styles = StyleSheet.create({
   buttonText: { color: '#284031', fontSize: 12, fontWeight: '600' },
   labButton: {
     maxWidth: '100%',
-    marginLeft: 'auto',
     minHeight: 44,
     justifyContent: 'center',
     paddingHorizontal: 18,

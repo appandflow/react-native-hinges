@@ -44,8 +44,10 @@ The example opens **Field Notes**, a two-page travel journal using both librarie
 - `react-native-reserved-regions` positions the pages around a native vertical
   division within the journal's bounded provider. Its caption changes to
   **TWO PAGES · NATIVE FOLD** when that division is present.
-- A full-screen provider places the header controls beside native occlusion bounds,
-  with a 12-point gap. Amber outlines show the measured rectangles.
+- A full-screen provider splits the Journal / Map / Moments toolbar around native
+  occlusion bounds, with a 12-point gap. The tabs use the clear spans on either
+  side; amber outlines show measured rectangles. The API does not identify what
+  causes an occlusion.
 - `useAnimatedHinges()` drives lighting and fades/slides secondary journal text
   between 120° and 60°. The pages stay geometrically flat; the physical screen
   supplies perspective. Reduced motion disables translation. When the angle is
@@ -55,9 +57,7 @@ Native input is the default, labeled **NATIVE HINGE**. **Preview motion** genera
 an angle for the artwork and displays **SIMULATED ANGLE**; **Use native angle**
 returns to native observations. Preview does not generate reserved-region geometry.
 
-The example installs the reserved-regions implementation from a pinned GitHub
-commit while its functional npm release is pending. The workspace permits that
-exact dependency revision's build during `pnpm install`.
+The example installs `react-native-reserved-regions@0.1.0-alpha.2` from npm.
 
 [Watch the native Android emulator demo](https://github.com/user-attachments/assets/7f69106d-2649-4591-917c-9aa7743fd5fa). The recording uses the matching local alpha.2 candidate and the example Worklets patch; it is not a physical-device or npm-installed recording.
 

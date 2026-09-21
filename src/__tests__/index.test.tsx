@@ -18,7 +18,13 @@ jest.mock('../HingesModule', () => ({
   __esModule: true,
   default: {
     getSnapshot: jest.fn((root: number) => ({ hinges: mockSnapshots.get(root) ?? [] })),
-    startObserving: jest.fn(),
+    // Native replays the current snapshot asynchronously after startObserving.
+    startObserving: jest.fn((rootTag: number) => {
+      queueMicrotask(() => {
+        const hinges = mockSnapshots.get(rootTag) ?? [];
+        for (const listener of mockListeners) listener({ rootTag, hinges });
+      });
+    }),
     stopObserving: jest.fn(),
     onHingesChange: jest.fn((listener: (event: HingesChangeEvent) => void) => {
       mockListeners.add(listener);
@@ -72,13 +78,13 @@ it('isolates roots, shares one observation across subscriptions, and releases on
   expect(mockListeners.size).toBe(0);
 });
 
-it('does not replace a newer cached snapshot with a queued older event', () => {
+it('applies event payloads directly without re-reading the native snapshot', () => {
   const observer = createHingeObserver(1);
   const off = observer.subscribe(jest.fn());
+  expect(NativeHinges.getSnapshot).toHaveBeenCalledTimes(1);
   emit(1, native);
-  const snapshot = observer.get();
-  for (const listener of mockListeners) listener({ rootTag: 1, hinges: [] });
-  expect(observer.get()).toBe(snapshot);
+  expect(observer.get()).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
+  expect(NativeHinges.getSnapshot).toHaveBeenCalledTimes(1);
   off();
 });
 
@@ -149,12 +155,16 @@ it('throws a clear error when useHinges renders without a RootTagContext provide
   }
 });
 
-it('refreshes state that changed between observer creation and subscription', () => {
+it('delivers state that changed between observer creation and subscription via the startObserving replay', async () => {
   const observer = createHingeObserver(1);
   expect(observer.get()).toEqual([]);
   mockSnapshots.set(1, native);
   const listener = jest.fn();
   const off = observer.subscribe(listener);
+  expect(observer.get()).toEqual([]);
+  expect(listener).not.toHaveBeenCalled();
+  await Promise.resolve();
+  expect(NativeHinges.getSnapshot).toHaveBeenCalledTimes(1);
   expect(observer.get()).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
   expect(listener).toHaveBeenCalledTimes(1);
   off();

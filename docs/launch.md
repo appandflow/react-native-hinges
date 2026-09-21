@@ -13,7 +13,8 @@ dist-tags before posting. This document does not authorize posting to X.
 > Here they are together in Field Notes. New Architecture, Reanimated support,
 > and alpha releases available now.
 
-Attach the [folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v4.mp4).
+The folding Field Notes review render is kept as a local artifact outside the
+repository and website deployment.
 
 Suggested reply:
 
@@ -37,7 +38,7 @@ installing either library. They must apply it, rebuild, and validate their app.
 
 ## Recorded demo
 
-The video maps real Android emulator app footage onto a
+The v5 local review render maps real Android emulator app footage onto a
 [Galaxy Z Fold 3 model by RHModels / CGTrader](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model).
 It is a device illustration, not a physical-device recording. The model follows
 a lightly smoothed curve extracted from the native angle readout in the app recording. The library readings and app footage stay unfiltered.
@@ -69,9 +70,14 @@ The scrcpy recording is cropped to remove the Android taskbar and converted to
 a fold sequence and two close-ups; it does not establish hardware performance or
 continuous iOS hinge-angle delivery.
 
+The clean v5 composition retains the title, hinge angle, divider lines, and
+device while removing callout overlays and footer labels. The source capture was
+taken from Hinges at commit `8578e26`; the documentation/main comparison point
+is `f38954e`. This artifact does not claim full native current-release validation.
+
 ## Retained evidence
 
-The task's `fold-showcase-v4/` artifact directory retains the source capture,
+The task's `fold-showcase-v5/` artifact directory retains the source capture,
 input and tab logs, audited texture, OCR angle readings, rendering scripts,
 final video, poster, and provenance. The original alpha.2 capture remains under
 `alpha2-demo/android/`; it is superseded for the launch video.

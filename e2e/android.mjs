@@ -1,18 +1,11 @@
 #!/usr/bin/env node
 /**
- * Android end-to-end check for the example app.
- *
- * The example is installed as a release build. The React Native template signs
- * the release variant with the checked-in debug keystore and embeds the
- * JavaScript bundle, so the run never needs a Metro server. That is the reason
- * assembleRelease is used here instead of a bundled debug variant.
+ * Android end-to-end check for the example app. Installs the release variant, which embeds the
+ * JavaScript bundle and is signed with the checked-in debug keystore, so no Metro server is needed.
  *
  * Environment:
- *   E2E_ANDROID_SERIAL  adb serial to drive. Required when more than one device
- *                       is attached; otherwise the sole attached device is used.
+ *   E2E_ANDROID_SERIAL  adb serial to drive; required when more than one device is attached.
  *   E2E_SKIP_BUILD=1    reuse the already installed APK and skip build/install.
- *
- * Screenshots are written to e2e/artifacts/.
  */
 import { spawnSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
@@ -43,13 +36,7 @@ function ad(args, options = {}) {
 }
 
 function fail(message, detail) {
-  console.error(`FAIL ${message}`);
-  if (detail) console.error(detail.trim());
-  const snapshot = ad(['snapshot', '-i']);
-  console.error('--- accessibility snapshot ---');
-  console.error((snapshot.stdout || snapshot.stderr || '(snapshot unavailable)').trim());
-  ad(['close']);
-  process.exit(1);
+  throw new Error(detail?.trim() ? `${message}\n${detail.trim()}` : message);
 }
 
 function resolveSerial() {
@@ -98,7 +85,8 @@ const avdName = resolveAvdName();
 // A leftover `cmd device_state state <id>` override pins the committed posture, so the hinge angle
 // stops driving it and the status assertions read whatever the previous session left behind.
 function clearDeviceStateOverride() {
-  adb(['-s', serial, 'shell', 'cmd', 'device_state', 'state', 'reset']);
+  const result = adb(['-s', serial, 'shell', 'cmd', 'device_state', 'state', 'reset']);
+  if (result.status !== 0) fail('could not reset the device state override', result.stdout + result.stderr);
 }
 
 function setHingeAngle(degrees) {
@@ -131,13 +119,11 @@ function press(label, target) {
   if (result.status !== 0) fail(`${label}: could not press ${target}`, result.stdout + result.stderr);
 }
 
+let sessionOpened = false;
 function coldLaunch(label) {
+  sessionOpened = true;
   const result = ad(['open', appId, '--relaunch', '--foreground']);
-  if (result.status !== 0) {
-    console.error(`FAIL ${label}: cold launch`);
-    console.error((result.stdout + result.stderr).trim());
-    process.exit(1);
-  }
+  if (result.status !== 0) fail(`${label}: cold launch`, result.stdout + result.stderr);
   console.log(`LAUNCH ${label}: ${appId} on ${serial} (${avdName})`);
 }
 
@@ -158,38 +144,59 @@ if (process.env.E2E_SKIP_BUILD !== '1') {
     console.error('FAIL gradle assembleRelease');
     process.exit(1);
   }
-  const installed = run(adbBin, ['-s', serial, 'install', '-r', apk], { stdio: 'inherit' });
+  const installed = adb(['-s', serial, 'install', '-r', apk]);
+  console.log((installed.stdout + installed.stderr).trim());
   if (installed.status !== 0) {
     console.error('FAIL adb install');
     process.exit(1);
   }
 }
 
-clearDeviceStateOverride();
-setHingeAngle(180);
+function scenario() {
+  clearDeviceStateOverride();
+  setHingeAngle(180);
 
-coldLaunch('open field notes');
-expectText('field notes ready', 'Sensor lab ↗', 20000);
-press('open sensor lab', 'text="Sensor lab ↗"');
+  coldLaunch('open field notes');
+  expectText('field notes ready', 'Sensor lab ↗', 20000);
+  press('open sensor lab', 'text="Sensor lab ↗"');
 
-expectText('sensor lab reads the native hinge', 'NATIVE HINGE', 15000);
-capture('sensor-lab-native-hinge');
+  expectText('sensor lab reads the native hinge', 'NATIVE HINGE', 15000);
+  capture('sensor-lab-native-hinge');
 
-setHingeAngle(45);
-expectText('native angle at 45 degrees', '45.0°');
-expectText('status at 45 degrees', 'partiallyOpen', 15000);
-capture('sensor-lab-hinge-45');
+  setHingeAngle(45);
+  expectText('native angle at 45 degrees', '45.0°');
+  expectText('status at 45 degrees', 'partiallyOpen', 15000);
+  capture('sensor-lab-hinge-45');
 
-setHingeAngle(180);
-expectText('native angle at 180 degrees', '180.0°');
-expectText('status at 180 degrees', 'fullyOpen', 15000);
-capture('sensor-lab-hinge-180');
+  setHingeAngle(180);
+  expectText('native angle at 180 degrees', '180.0°');
+  expectText('status at 180 degrees', 'fullyOpen', 15000);
+  capture('sensor-lab-hinge-180');
 
-// Field Notes is the launch screen, and the example's own Back to Field Notes control sits in the
-// bottom 44dp of an edge-to-edge window, under the system taskbar, so it is not hittable here.
-coldLaunch('return to field notes');
-expectText('field notes native readout', 'NATIVE 180.0°', 20000);
-capture('field-notes-native-180');
+  // Field Notes is the launch screen, and the example's own Back to Field Notes control sits in the
+  // bottom 44dp of an edge-to-edge window, under the system taskbar, so it is not hittable here.
+  coldLaunch('return to field notes');
+  expectText('field notes native readout', 'NATIVE 180.0°', 20000);
+  capture('field-notes-native-180');
+}
 
-ad(['close']);
-console.log(`e2e:android passed on ${serial}. Screenshots in ${artifacts}`);
+try {
+  scenario();
+  console.log(`e2e:android passed on ${serial}. Screenshots in ${artifacts}`);
+} catch (error) {
+  console.error(`FAIL ${error.message}`);
+  if (sessionOpened) {
+    const snapshot = ad(['snapshot', '-i']);
+    console.error('--- accessibility snapshot ---');
+    console.error((snapshot.stdout || snapshot.stderr || '(snapshot unavailable)').trim());
+  }
+  process.exitCode = 1;
+} finally {
+  if (sessionOpened) {
+    const closed = ad(['close']);
+    if (closed.status !== 0) {
+      console.error(`FAIL agent-device close\n${(closed.stdout + closed.stderr).trim()}`);
+      process.exitCode = 1;
+    }
+  }
+}

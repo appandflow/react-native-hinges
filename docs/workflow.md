@@ -105,8 +105,9 @@ For CocoaPods, use a Ruby version compatible with `example/Gemfile`, then run
 
 ### Automated Android check
 
-`pnpm e2e:android` drives the example on an attached Android emulator or device
-and needs no Metro server. It builds the example release variant, which the
+`pnpm e2e:android` drives the example on an attached Android emulator, which
+must be an emulator because the hinge sensor is driven through the emulator
+console, and needs no Metro server. It builds the example release variant, which the
 React Native template signs with the checked-in debug keystore and ships with
 the JavaScript bundle embedded, installs it, then cold launches it.
 

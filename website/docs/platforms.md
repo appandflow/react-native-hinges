@@ -44,7 +44,7 @@ The native module observes Jetpack WindowManager folding features for its Activi
 
 The library does not infer `closed` from the angle. Every reported folding feature can contribute hinge state, including a flat feature that does not separate the display.
 
-Android sensor readings use degrees; the library converts them to radians. An angle is attached only when there is exactly one hinge-angle sensor and at most one folding feature. With multiple folding features, each angle remains `null` because there is no reliable feature-to-sensor association. If only the sensor is available, the hinge has status `unknown`.
+Android sensor readings use degrees; the library converts them to radians. The library reads the device's default hinge-angle sensor, and an angle is attached only when there is at most one folding feature. With multiple folding features, each angle remains `null` because there is no reliable feature-to-sensor association. If only the sensor is available, the hinge has status `unknown`.
 
 The current Android registration requests `SENSOR_DELAY_NORMAL`. The effective delivery cadence depends on the sensor and operating system; this is not a promised update rate. There is no public sampling-rate option.
 

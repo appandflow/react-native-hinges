@@ -115,7 +115,7 @@ class HingesModule(context: ReactApplicationContext) : NativeHingesSpec(context)
       val activity = root.context.findActivity() ?: return
       active = true
       if (Build.VERSION.SDK_INT >= 30) {
-        hingeSensor = sensorManager.getSensorList(Sensor.TYPE_HINGE_ANGLE).singleOrNull()
+        hingeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HINGE_ANGLE)
         hingeSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
       }
       val windowTracker = WindowInfoTracker.getOrCreate(activity)

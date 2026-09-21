@@ -147,7 +147,7 @@ multiple-hinge hardware have not yet been validated.
 
 ## Example
 
-[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase.mp4): native Android emulator footage mapped onto a Galaxy Z Fold 3 model. Hinge angles drive fades and slides; reserved regions keep the pages and toolbar clear of the fold and cutout. The example includes the Worklets patch described above.
+[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v2.mp4): native Android emulator footage mapped onto a Galaxy Z Fold 3 model. Hinge angles drive fades and slides; reserved regions keep the pages and toolbar clear of the fold and cutout. The example includes the Worklets patch described above.
 
 ## Development
 

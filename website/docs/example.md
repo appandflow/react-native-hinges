@@ -58,10 +58,12 @@ The example opens **Field Notes**, a two-page travel journal using both librarie
 Native input is the default, labeled **NATIVE HINGE**. **Preview motion** generates
 an angle for the artwork and displays **SIMULATED ANGLE**; **Use native angle**
 returns to native observations. Preview does not generate reserved-region geometry.
+Tap **VOL. 01 / THE OUTDOORS** to hide the preview and Sensor Lab buttons for a
+recording; tap it again to restore them. Hiding the controls also selects native input.
 
 The example installs `react-native-reserved-regions@0.1.0-alpha.2` from npm.
 
-[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase.mp4). The 27.6-second video maps native Android emulator footage onto a [Galaxy Z Fold 3 model by RHModels](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model). The model follows the recorded native angle; close-ups highlight the fold region and camera clearance. The recording uses the example Worklets patch and npm-installed reserved regions alpha.2. The illustrated device is not a physical-device recording.
+[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v2.mp4). The 32-second video maps native Android emulator footage onto a [Galaxy Z Fold 3 model by RHModels](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model). The model follows the recorded native angle; close-ups highlight the fold region and show the toolbar switching tabs around camera clearance. The recording uses the example Worklets patch and npm-installed reserved regions alpha.2. The illustrated device is not a physical-device recording.
 
 ## Sensor Lab
 

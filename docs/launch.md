@@ -1,83 +1,89 @@
 # Launch draft: reserved regions and hinges
 
 Draft for the functional alpha.2 releases. Verify both npm versions and `next`
-dist-tags before posting. Documentation sites are local builds; the links below
-use the public repositories. This document does not authorize posting to X.
+dist-tags before posting. This document does not authorize posting to X.
 
 ## X post
 
-> Two React Native alphas for foldables:
+> Two React Native libraries for foldables.
 >
-> react-native-reserved-regions: folds + occlusions in your view's coordinates.
-> react-native-hinges: posture + angles, including Reanimated shared values.
+> Hinges drives animations from native hinge angles. Reserved Regions keeps
+> your UI clear of folds and cutouts.
 >
-> Native Android emulator demo below.
->
-> https://github.com/appandflow/react-native-reserved-regions
-> https://github.com/appandflow/react-native-hinges
+> Here they are together in Field Notes. New Architecture, Reanimated support,
+> and alpha releases available now.
 
-Attach the [combined Field Notes demo](https://github.com/user-attachments/assets/7f69106d-2649-4591-917c-9aa7743fd5fa).
-The clip shows native emulator inputs, not the app's simulated preview.
+Attach the [folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v2.mp4).
 
-Suggested reply after registry verification:
+Suggested reply:
+
+> Docs and examples:
+> https://appandflow.github.io/react-native-hinges/
+> https://appandflow.github.io/react-native-reserved-regions/
+>
+> Tested on RN 0.88 RC. Feedback and device reports welcome.
 
 ```sh
 npm install react-native-hinges@0.1.0-alpha.2 react-native-reserved-regions@0.1.0-alpha.2
 ```
 
-> New Architecture; tested on RN 0.88 RC. UIKit observations require the iOS 27.1
-> SDK and runtime, and a UIScene host. Android readings depend on folding features
-> and a hinge sensor. Early alphas: feedback and device reports welcome.
+UIKit observations require the iOS 27.1 SDK and runtime, and a UIScene host.
+Android readings depend on folding features and a hinge sensor.
 
 Link the [animated-mount compatibility note](verification/worklets-readiness-mount-2026-09-20.md)
 in the release details. The example patches Worklets 0.13.0 for synchronous
 readiness-driven animated mounts; consuming apps do not receive that patch by
 installing either library. They must apply it, rebuild, and validate their app.
-Do not post a documentation-site URL until its deployment is verified.
 
 ## Recorded demo
 
-The 26.584-second original recording uses Android 16/API 36 emulator-5580 and
-app `hinges.example`. The Field Notes source is included in commit `bde6e96`,
-with RN `0.88.0-rc.1`, Reanimated `4.7.0`, Worklets `0.13.0` plus the committed
-FIFO patch, and a local reserved-regions alpha.2 candidate tarball. It is not an
-npm-installed or physical-device recording. The later Git dependency pin contains
-the same native regions code.
+The video maps real Android emulator app footage onto a
+[Galaxy Z Fold 3 model by RHModels / CGTrader](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model).
+It is a device illustration, not a physical-device recording. The model follows
+the native angle readout extracted from the app recording.
 
-The input sequence lasts 22 seconds. Video timestamps differ from host input
-elapsed time; the original file has not been retimed.
+The app runs on the owned API 34 emulator `emulator-5590`, with React Native
+`0.88.0-rc.1`, Reanimated `4.7.0`, Worklets `0.13.0` plus the example FIFO patch,
+and npm-installed reserved regions `0.1.0-alpha.2`. Hinges and the example use
+local repository source. The stronger motion and mirrored landscape are example
+changes made after the alpha.2 library release.
 
-| Host input time | Input                                       | Visible behavior                                                                              |
-| --------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| 0–3 s           | Flat posture, 180°                          | Open journal and measured no-division state.                                                  |
-| 3–19 s          | Half-open posture, 180° → 60° → 180° sweeps | Native division marker and two-page caption; angle readout, perspective, and lighting change. |
-| 19–22 s         | Flat posture, 180°                          | Journal returns to its open layout.                                                           |
+- Native angle sweeps from 180° through 120°, 90°, and 60°, then back to 180°.
+  The journal number, headline, body, and footer fade and slide toward the outer
+  edge. The sun stays away from the fold.
+- The emulator remains in half-open posture so the measured division stays
+  present throughout. The fold close-up holds a recorded frame.
+- Journal, Map, and Moments switch in the camera close-up. The toolbar uses the
+  clear spans around native occlusion bounds, adding 12 dp of clearance.
 
-The emulator's native sensor console supplies angles. An AOSP `display_features`
-override supplies fold geometry; posture and angle are controlled independently.
-The **NATIVE HINGE** badge and degree readout remain visible. This clip does not
-show occlusion overlays, Sensor Lab's JS-stall test, or changing native iOS angles.
-The reserved-regions example separately visualizes occlusions and provider bounds.
+The emulator console supplies hinge-angle input. Native Android display-feature
+and cutout overrides supply the fixture geometry. The app reads those native
+APIs; the video does not use the app's simulated preview. The regions API reports
+occlusion geometry and does not identify a camera.
 
-A generated preview is available in the app. Keep **SIMULATED ANGLE** visible in
-any preview recording; its numeric readout is independently labeled native.
+The host recording is cropped to remove letterboxing and the Android taskbar,
+restored to the app viewport's aspect ratio, and converted to 24 fps for the
+render. Output frame rate is not native event frequency. The video is edited into
+a fold sequence and two close-ups; it does not establish hardware performance or
+continuous iOS hinge-angle delivery.
 
 ## Retained evidence
 
-The task's `alpha2-demo/android/` artifact directory contains the original video,
-`input.json`, the APK/source hashes in `patched-provenance.json`, startup/reload
-screenshots, and the empty post-patch error logs. `alpha2-demo/ios-combined.png`
-records static Duo startup with measured no-division state and native 0°.
+The task's `fold-showcase-v2/` artifact directory retains the source capture,
+input and tab logs, corrected texture, OCR angle readings, rendering scripts,
+final video, poster, and provenance. The original alpha.2 capture remains under
+`alpha2-demo/android/`; it is superseded for the launch video.
 
-The approximately 60 commands per second in the input log describe host injection
-cadence, not delivered event frequency, hardware sampling frequency, or FPS.
-Earlier Sensor Lab delivery measurements and their limits are recorded in the
+Earlier delivery measurements and their limits are recorded in the
 [Android root-observer report](verification/root-observer-2026-09-20.md).
+The iOS screenshot proves static Duo startup only. A changing native iOS angle
+has not yet been verified.
 
 ## Alt text
 
-Field Notes travel journal on an Android emulator. Two illustrated pages sit
-side by side. A native fold marker appears between them, and the caption changes
-to “Two pages · native fold.” As the native angle readout changes, the pages tilt
-and their lighting shifts before returning to an open layout. The screen names
-react-native-hinges and react-native-reserved-regions.
+A 3D Galaxy Z Fold 3 displays the Field Notes travel journal. As the phone folds,
+the right page's large number and text fade and slide outward. The illustrated sun
+sits near the left outer edge. A close-up highlights the gap between the pages.
+Another close-up shows Journal, Map, and Moments tabs switching while keeping a
+gap around the camera. The screen names react-native-hinges and
+react-native-reserved-regions.

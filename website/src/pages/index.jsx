@@ -101,8 +101,8 @@ export default function Home() {
           <article>
             <span className={styles.number}>01 / SCOPE</span>
             <h2>Scope the observation.</h2>
-            <p>Attach observation to the intended native hierarchy. Each provider supplies its own hinge snapshot.</p>
-            <Link to="/docs/usage">Use the provider →</Link>
+            <p>Observe the existing React root. Each root has its own hinge snapshot, with no extra native view.</p>
+            <Link to="/docs/usage">Use the hook →</Link>
           </article>
           <article>
             <span className={styles.number}>02 / STATE</span>
@@ -127,15 +127,15 @@ export default function Home() {
             <p className={styles.eyebrow}>ONE SNAPSHOT. TWO WAYS TO READ.</p>
             <h2>React and beyond.</h2>
             <p>
-              Use <code>useHinges()</code> beneath a <code>HingeProvider</code> for reactive updates.
+              Use <code>useHinges()</code> inside your React Native app for reactive updates.
             </p>
             <p>
               For other consumers, create an observer and use <code>get()</code> and <code>subscribe()</code> with the
-              same provider.
+              same root tag.
             </p>
             <Link to="/docs/observers">Observe outside React →</Link>
           </div>
-          <CodeBlock language="tsx" title="Inside your provider">
+          <CodeBlock language="tsx" title="Inside your React root">
             {snippet}
           </CodeBlock>
         </section>

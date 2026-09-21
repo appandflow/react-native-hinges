@@ -1,43 +1,24 @@
 ---
 title: Observe outside React
-description: Read hinge snapshots and subscribe without a React hook.
+description: Read root-scoped snapshots and subscribe without a hook.
 ---
 
-Create an observer and attach it to one `HingeProvider`. Keep the same observer instance for that provider's lifetime.
-
-```tsx
-import { createHingeObserver, HingeProvider } from 'react-native-hinges';
-
-export const hingeObserver = createHingeObserver();
-
-export default function App() {
-  return (
-    <HingeProvider observer={hingeObserver} style={{ flex: 1 }}>
-      <AppContent />
-    </HingeProvider>
-  );
-}
-```
-
-The provider owns native observation. Creating an observer alone does not attach to a device or window.
-
-## Read and subscribe
-
 ```ts
-const currentHinges = hingeObserver.get();
+import { createHingeObserver } from 'react-native-hinges';
 
-const unsubscribe = hingeObserver.subscribe(() => {
-  const updatedHinges = hingeObserver.get();
-  console.log(updatedHinges);
+// Obtain this root's tag from RootTagContext or the native host.
+const observer = createHingeObserver(rootTag);
+const unsubscribe = observer.subscribe(() => {
+  console.log(observer.get());
 });
+console.log(observer.get());
+
+// Release when no longer needed.
+unsubscribe();
 ```
 
-`get()` returns the latest immutable snapshot. Subscribe callbacks receive no arguments; call `get()` inside the callback to read the new value. Call `unsubscribe()` when the consumer no longer needs updates.
+Creation seeds the snapshot from the native cache; `get()` synchronously reads the JS-owned snapshot. Returned arrays and entries are immutable, and equivalent snapshots retain their identity. Before a native reading is available it returns `[]`.
 
-## Lifetime and scope
+`subscribe()` starts observation for the selected root. Callbacks receive no arguments; read `get()` for the current value. Multiple subscriptions on this observer share one native subscription; separate observers and animated hooks are reference-counted natively. Unsubscribing the final consumer releases native observation and clears its native cache. The observer retains its last delivered snapshot until a later subscription refreshes it.
 
-The snapshot starts as `[]` and is cleared when its provider unmounts. Create a separate observer for each provider. Sharing one between unrelated native hierarchies would make the source of a reading ambiguous.
-
-When you omit the `observer` prop, the provider creates an internal observer for hook consumers. `useHinges()` uses React's `useSyncExternalStore` to read the same snapshots as the external `get()` / `subscribe()` interface.
-
-There is no global observer. Even code outside React needs an observer connected to the intended provider.
+Creating an observer or calling `get()` alone does not start native observation. Subscribe when readings must remain current. No process-wide root is selected implicitly.

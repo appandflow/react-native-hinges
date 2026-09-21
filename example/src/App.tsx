@@ -1,5 +1,14 @@
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import {
+  Pressable,
+  RootTagContext,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   cancelAnimation,
@@ -13,11 +22,20 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { AnimatedHingeProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { createHingeObserver, useHinges } from 'react-native-hinges';
+import { useAnimatedHinges } from 'react-native-hinges/reanimated';
 import { useHingeTelemetry } from './useHingeTelemetry';
 import { FieldNotes } from './FieldNotes';
 
 function Playground() {
+  const reactHinges = useHinges();
+  const rootTag = useContext(RootTagContext);
+  const observer = useMemo(() => createHingeObserver(rootTag), [rootTag]);
+  const [observed, setObserved] = useState(observer.get);
+  useEffect(() => {
+    const off = observer.subscribe(() => setObserved(observer.get()));
+    return off;
+  }, [observer]);
   const hinges = useAnimatedHinges();
   const { readout, measure } = useHingeTelemetry(hinges);
   const insets = useSafeAreaInsets();
@@ -133,6 +151,10 @@ function Playground() {
             <Text style={styles.detail}>{readout.total} readings received</Text>
           </View>
         </View>
+        <Text style={styles.detail}>
+          React hook: {reactHinges[0]?.angle?.toFixed(3) ?? 'unavailable'} rad · Observer:{' '}
+          {observed[0]?.angle?.toFixed(3) ?? 'unavailable'} rad
+        </Text>
         <Text style={styles.note}>
           {preview
             ? 'Preview moves the artwork only. Measurements still come from the native hinge.'
@@ -195,7 +217,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" />
-      <AnimatedHingeProvider style={styles.screen}>
+      <View style={styles.screen}>
         {lab ? (
           <>
             <Playground />
@@ -206,7 +228,7 @@ export default function App() {
         ) : (
           <FieldNotes onOpenLab={() => setLab(true)} />
         )}
-      </AnimatedHingeProvider>
+      </View>
     </SafeAreaProvider>
   );
 }

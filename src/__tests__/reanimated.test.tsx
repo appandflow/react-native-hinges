@@ -1,192 +1,141 @@
 import * as React from 'react';
-import { expect, it, jest } from '@jest/globals';
+import { beforeEach, expect, it, jest } from '@jest/globals';
 import { act, create } from 'react-test-renderer';
+import { RootTagContext, type RootTag } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
-import { createHingeObserver, useHinges, type Hinge, type HingeProviderProps } from '../index';
-import { AnimatedHingeProvider, useAnimatedHinges } from '../reanimated';
-import type { HingesChangeEvent } from '../HingesViewNativeComponent';
+import { useAnimatedHinges } from '../reanimated';
+import type { Hinge } from '../index';
+import NativeHinges from '../HingesModule';
+import type { HingesChangeEvent } from '../NativeHinges';
 
-const mockWorklets = new Map<string, (event: HingesChangeEvent) => void>();
-const mockJSListeners = new Map<string, (event: { nativeEvent: HingesChangeEvent }) => void>();
-
-jest.mock('react-native-reanimated', () => {
-  const mockReact = jest.requireActual<typeof import('react')>('react');
-  return {
-    useSharedValue: <T,>(initial: T) => {
-      const [shared] = mockReact.useState(() => {
-        let value = initial;
-        return {
-          get: () => value,
-          set: (next: T) => {
-            value = next;
-          },
-        };
-      });
-      return shared;
-    },
-    useEvent: (handler: (event: HingesChangeEvent) => void) => mockReact.useRef(handler).current,
-    createAnimatedComponent: (Component: React.ComponentType<HingeProviderProps>) =>
-      function AnimatedComponent({
-        onHingesChange,
-        ...props
-      }: HingeProviderProps & {
-        onHingesChange: (event: HingesChangeEvent) => void;
-      }) {
-        mockReact.useLayoutEffect(() => {
-          mockWorklets.set(props.testID!, onHingesChange);
-          return () => {
-            mockWorklets.delete(props.testID!);
-          };
-        }, [props.testID, onHingesChange]);
-        return <Component {...props} />;
-      },
-  };
-});
-
-jest.mock('../HingesView', () => {
-  const mockReact = jest.requireActual<typeof import('react')>('react');
-  return {
-    HingesView: ({
-      children,
-      testID,
-      onHingesChange,
-    }: HingeProviderProps & {
-      onHingesChange: (event: { nativeEvent: HingesChangeEvent }) => void;
-    }) => {
-      mockReact.useLayoutEffect(() => {
-        mockJSListeners.set(testID!, onHingesChange);
-        return () => {
-          mockJSListeners.delete(testID!);
-        };
-      }, [testID, onHingesChange]);
-      return children;
-    },
-  };
-});
-
-async function emit(testID: string, hinges: HingesChangeEvent['hinges']) {
-  await act(async () => {
-    mockWorklets.get(testID)!({ hinges });
-    mockJSListeners.get(testID)!({ nativeEvent: { hinges } });
-  });
+const mockUIQueue: (() => void)[] = [];
+const mockRNQueue: (() => void)[] = [];
+jest.mock('react-native-worklets', () => ({
+  scheduleOnUI: (callback: () => void) => mockUIQueue.push(callback),
+  scheduleOnRN: (callback: () => void) => mockRNQueue.push(callback),
+}));
+function flushSetup() {
+  while (mockUIQueue.length) mockUIQueue.shift()?.();
+  while (mockRNQueue.length) mockRNQueue.shift()?.();
 }
 
-it('maps native events identically for worklets, React hooks and non-React observers without rendering animated consumers', async () => {
-  const observer = createHingeObserver();
-  let shared: SharedValue<readonly Hinge[]>;
-  let reactSnapshot: readonly Hinge[] = [];
-  let animatedRenders = 0;
-  function AnimatedProbe() {
+const mockWorklets = new Map<number, Set<(event: HingesChangeEvent) => void>>();
+jest.mock('react-native-reanimated', () => {
+  const react = jest.requireActual<typeof React>('react');
+  return {
+    useSharedValue: <T,>(initial: T) =>
+      react.useMemo(() => {
+        let current = initial;
+        return {
+          get: () => current,
+          set: (value: T) => {
+            current = value;
+          },
+        };
+      }, []),
+    useEvent: (handler: (event: HingesChangeEvent) => void) =>
+      react.useMemo(
+        () => ({
+          workletEventHandler: {
+            registerForEvents: (root: number) =>
+              mockUIQueue.push(() => {
+                const handlers = mockWorklets.get(root) ?? new Set();
+                handlers.add(handler);
+                mockWorklets.set(root, handlers);
+              }),
+            unregisterFromEvents: (root: number) =>
+              mockUIQueue.push(() => {
+                mockWorklets.get(root)?.delete(handler);
+              }),
+          },
+        }),
+        [],
+      ),
+  };
+});
+jest.mock('../HingesModule', () => ({
+  __esModule: true,
+  default: {
+    getSnapshot: () => ({ hinges: [] }),
+    startObserving: jest.fn((rootTag: number) => {
+      for (const handler of mockWorklets.get(rootTag) ?? [])
+        handler({ rootTag, hinges: [{ status: 'closed', angle: 0, hasAngle: true }] });
+    }),
+    stopObserving: jest.fn(),
+  },
+}));
+beforeEach(() => {
+  mockWorklets.clear();
+  mockUIQueue.length = 0;
+  mockRNQueue.length = 0;
+  jest.clearAllMocks();
+});
+
+it('registers before acquiring native observation, isolates roots, and retains updates without React renders', async () => {
+  const values = new Map<string, SharedValue<readonly Hinge[]>>();
+  let renders = 0;
+  function Consumer({ name }: { name: string }) {
     const hinges = useAnimatedHinges();
-    React.useLayoutEffect(() => {
-      shared = hinges;
-      animatedRenders++;
+    React.useEffect(() => {
+      values.set(name, hinges);
+      renders++;
     });
     return null;
   }
-  function ReactProbe() {
-    const hinges = useHinges();
-    React.useLayoutEffect(() => {
-      reactSnapshot = hinges;
-    }, [hinges]);
-    return null;
-  }
+  const first = <Consumer name="first" />;
+  const tree = (two: boolean) => (
+    <>
+      <RootTagContext.Provider value={1 as unknown as RootTag}>
+        {first}
+        {two && <Consumer name="second" />}
+      </RootTagContext.Provider>
+      <RootTagContext.Provider value={2 as unknown as RootTag}>
+        <Consumer name="other" />
+      </RootTagContext.Provider>
+    </>
+  );
   let renderer: ReturnType<typeof create>;
-  await act(async () => {
-    renderer = create(
-      <AnimatedHingeProvider testID="mapping" observer={observer}>
-        <AnimatedProbe />
-        <ReactProbe />
-      </AnimatedHingeProvider>,
-    );
+  await act(() => {
+    renderer = create(tree(true));
   });
-  expect(shared!.get()).toEqual([]);
-  expect(observer.get()).toEqual([]);
-  const initialRenders = animatedRenders;
-  const nativeHinges = [
-    { status: 'closed', angle: 0, hasAngle: true },
-    { status: 'partiallyOpen', angle: Math.PI / 2, hasAngle: true },
-    { status: 'fullyOpen', angle: Math.PI, hasAngle: true },
-    { status: 'future', angle: 123, hasAngle: false },
-  ];
-  await emit('mapping', nativeHinges);
-  expect(shared!.get()).toEqual([
-    { status: 'closed', angle: 0 },
-    { status: 'partiallyOpen', angle: Math.PI / 2 },
-    { status: 'fullyOpen', angle: Math.PI },
-    { status: 'unknown', angle: null },
-  ]);
-  expect(shared!.get()).toEqual(observer.get());
-  expect(reactSnapshot).toBe(observer.get());
-  expect(animatedRenders).toBe(initialRenders);
-  await emit('mapping', []);
-  expect(shared!.get()).toEqual([]);
-  expect(reactSnapshot).toEqual([]);
-  await emit('mapping', nativeHinges);
-  await act(async () => {
-    renderer!.unmount();
-  });
-  expect(observer.get()).toEqual([]);
+  expect(NativeHinges.startObserving).not.toHaveBeenCalled();
+  await act(flushSetup);
+  expect(values.get('first')?.get()).toEqual([{ status: 'closed', angle: 0 }]);
+  const previousRenders = renders;
+  for (const handler of mockWorklets.get(1) ?? [])
+    handler({ rootTag: 1, hinges: [{ status: 'future', angle: 123, hasAngle: false }] });
+  expect(values.get('first')?.get()).toEqual([{ status: 'unknown', angle: null }]);
+  expect(values.get('second')?.get()).toEqual([{ status: 'unknown', angle: null }]);
+  expect(values.get('other')?.get()).toEqual([{ status: 'closed', angle: 0 }]);
+  expect(renders).toBe(previousRenders);
+  await act(() => renderer.update(tree(false)));
+  await act(flushSetup);
+  expect(mockWorklets.get(1)?.size).toBe(1);
+  expect(NativeHinges.stopObserving).toHaveBeenCalledWith(1);
+  await act(() => renderer.unmount());
+  await act(flushSetup);
+  expect(mockWorklets.get(1)?.size).toBe(0);
+  expect(mockWorklets.get(2)?.size).toBe(0);
+  expect(values.get('first')?.get()).toEqual([{ status: 'unknown', angle: null }]);
 });
 
-it('keeps nested and independent animated snapshots separate across rerenders and observer replacement', async () => {
-  const firstObserver = createHingeObserver();
-  const nextObserver = createHingeObserver();
-  const innerObserver = createHingeObserver();
-  const values = new Map<string, SharedValue<readonly Hinge[]>>();
-  function Probe({ name }: { name: string }) {
-    const hinges = useAnimatedHinges();
-    React.useLayoutEffect(() => {
-      values.set(name, hinges);
-    }, [name, hinges]);
-    return null;
-  }
-  function Tree({ replace = false }: { replace?: boolean }) {
-    return (
-      <>
-        <AnimatedHingeProvider testID="outer" observer={replace ? nextObserver : firstObserver}>
-          <Probe name="outer" />
-          <AnimatedHingeProvider testID="inner" observer={innerObserver}>
-            <Probe name="inner" />
-          </AnimatedHingeProvider>
-        </AnimatedHingeProvider>
-        <AnimatedHingeProvider testID="independent">
-          <Probe name="independent" />
-        </AnimatedHingeProvider>
-      </>
-    );
-  }
+function SetupConsumer() {
+  useAnimatedHinges();
+  return null;
+}
+
+it('does not acquire observation if unmounted before the UI registration acknowledgment', async () => {
   let renderer: ReturnType<typeof create>;
-  await act(async () => {
-    renderer = create(<Tree />);
+  await act(() => {
+    renderer = create(
+      <RootTagContext.Provider value={1 as unknown as RootTag}>
+        <SetupConsumer />
+      </RootTagContext.Provider>,
+    );
   });
-  const outer = values.get('outer')!;
-  const inner = values.get('inner')!;
-  const independent = values.get('independent')!;
-  expect(outer).not.toBe(inner);
-  expect(independent).not.toBe(outer);
-  await emit('outer', [{ status: 'fullyOpen', angle: Math.PI, hasAngle: true }]);
-  expect(outer.get()).toEqual(firstObserver.get());
-  expect(inner.get()).toEqual([]);
-  expect(independent.get()).toEqual([]);
-  await emit('inner', [{ status: 'partiallyOpen', angle: 1, hasAngle: true }]);
-  expect(inner.get()).toEqual(innerObserver.get());
-  expect(outer.get()).toEqual([{ status: 'fullyOpen', angle: Math.PI }]);
-  await act(async () => {
-    renderer!.update(<Tree replace />);
-  });
-  expect(values.get('outer')).toBe(outer);
-  expect(values.get('inner')).toBe(inner);
-  expect(firstObserver.get()).toEqual([]);
-  expect(nextObserver.get()).toEqual(outer.get());
-  await emit('outer', [{ status: 'closed', angle: 0, hasAngle: true }]);
-  expect(outer.get()).toEqual([{ status: 'closed', angle: 0 }]);
-  expect(nextObserver.get()).toEqual(outer.get());
-  expect(inner.get()).toEqual([{ status: 'partiallyOpen', angle: 1 }]);
-  expect(independent.get()).toEqual([]);
-  await act(async () => {
-    renderer!.unmount();
-  });
-  expect(nextObserver.get()).toEqual([]);
-  expect(innerObserver.get()).toEqual([]);
+  await act(() => renderer.unmount());
+  await act(flushSetup);
+  expect(NativeHinges.startObserving).not.toHaveBeenCalled();
+  expect(NativeHinges.stopObserving).not.toHaveBeenCalled();
+  expect(mockWorklets.get(1)?.size).toBe(0);
 });

@@ -20,7 +20,8 @@ Before tagging that candidate:
       Keep simulated preview, simulator-native events, and physical-device results
       distinct. Record the SDK and runtime for iOS verification.
 - [ ] npm trusted publishing configured and verified for this exact repository,
-      workflow, and environment. This setup is currently pending verification.
+      workflow, and environment. The maintainer has configured both npm trusted publishers; an actual workflow
+      publish remains unverified.
 - [ ] GitHub `release` environment approval/tag restrictions verified in GitHub.
 - [ ] Candidate version, release notes, tarball contents, and dist-tag reviewed.
 - [ ] Functional publish and registry integrity/dist-tag verified after the

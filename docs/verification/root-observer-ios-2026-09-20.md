@@ -1,0 +1,59 @@
+# Root-scoped observer: iOS verification
+
+Verified on September 20, 2026 with Xcode 27.1 beta, React Native
+0.88.0-rc.1, Reanimated 4.7.0, and the New Architecture Debug example.
+
+## Device and build
+
+- Owned iPhone Duo simulator running iOS 27.1:
+  `EC33DE7B-AFC0-43F4-AEC1-A16960820B4C`.
+- App: `hinges.example`; Metro: port 8090.
+- Final native build passed in 35.4 seconds, including 8.1 seconds compilation.
+- Stim reported bundling at its launch-check deadline. Subsequent native UI
+  inspection confirmed the rebuilt example loaded.
+- The final `stim logs --errors` query had no matching records.
+
+## Observations
+
+A fresh app install/start with the simulator held closed produced the following
+values without any hinge movement:
+
+| Consumer                 | Observed value                           |
+| ------------------------ | ---------------------------------------- |
+| Reanimated UI telemetry  | 0.0 degrees, closed, one initial reading |
+| React `useHinges()` hook | 0.000 radians                            |
+| Standalone root observer | 0.000 radians                            |
+
+Navigating from Sensor Lab to Field Notes and back reproduced all three values.
+The remounted telemetry received one initial UI reading.
+
+The native cache for the observed root tag 11 contained one closed hinge with
+angle 0 and `hasAngle: true`. Reading the unobserved root tag 1 returned an empty
+array. This checks lookup separation, but does not establish correctness across
+two simultaneously mounted roots or windows.
+
+No native hinge view is mounted by the library. UIKit's interaction attaches to
+the existing registered React root. Observation starts with subscription, so the
+first uncached render may still receive an empty array before UIKit delivers
+its initial callback. These checks do not guarantee a populated first render.
+
+## Reanimated adapter
+
+The initial implementation populated the native cache and ordinary observers,
+but did not deliver iOS root events to Reanimated. Runtime diagnostics showed
+only `RCTNativeAnimatedTurboModule` registered with `RCTEventDispatcher`.
+Reanimated 4.7 registers its observer in `setBridge`, which can precede React
+Native's injection of its module registry.
+
+The adapter registers the already initialized Reanimated module through its
+`RCTEventDispatcherObserver` protocol before acquiring observations. It does not
+load the optional peer, and registration is deduplicated per native module.
+Initial and remount delivery passed after this change. This integration depends
+on Reanimated's current native observer implementation and needs checking when
+upgrading the supported versions. Temporary diagnostics were removed.
+
+## Limits
+
+Changing iOS angles, physical hardware, multiple live roots/windows, and
+first-visible-frame layout correction were not verified. The simulator only
+provided the static closed hinge state in this run.

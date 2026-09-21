@@ -17,7 +17,7 @@ for (const required of [
   'lib/module/reanimated.js',
   'lib/typescript/src/reanimated.d.ts',
   'Hinges.podspec',
-  'ios/HingesView.mm',
+  'ios/HingesModule.mm',
   'android/build.gradle',
 ]) {
   if (!entries.includes(`package/${required}`)) throw new Error(`Missing package file: ${required}`);
@@ -30,6 +30,7 @@ for (const conditions of Object.values(manifest.exports)) {
   }
 }
 for (const entry of entries) {
+  if (/^package\/android\/(?:.*\/)?build\//.test(entry)) throw new Error(`Unexpected native build output: ${entry}`);
   if (/^package\/(?:example|website|node_modules|docs|scripts|artifacts|\.github)\//.test(entry)) {
     throw new Error(`Unexpected package file: ${entry}`);
   }

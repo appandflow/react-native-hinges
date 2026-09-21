@@ -71,7 +71,7 @@ and the animation separately:
 
 A sample's changes-per-second value is not animation FPS or a hardware sampling-rate guarantee. Use changing native input during a stall test. A preview animation continuing to move only verifies that generated animation.
 
-The example includes Reanimated 4.7.0 and Worklets 0.13.0. See [the optional integration](./reanimated.md) for how its animated and ordinary consumers share a provider.
+The example includes Reanimated 4.7.0 and Worklets 0.13.0. See [the optional integration](./reanimated.md) for how its animated and ordinary consumers share native root observation.
 
 ## Native testing
 

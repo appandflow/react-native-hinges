@@ -36,7 +36,8 @@ export function mapHinges(hinges: readonly NativeHinge[]): readonly Hinge[] {
 
 /**
  * Creates an observer for an existing React root tag (available from RootTagContext).
- * Creation reads the native cache once; subscribe to keep the snapshot current.
+ * Creation reads the native cache once as a seed; further updates arrive with the
+ * onHingesChange event, and subscribing triggers a native replay of the current snapshot.
  * Multiple observers for the same root share native observation. No provider is needed.
  */
 export function createHingeObserver(root: number | RootTag): HingeObserver {
@@ -56,11 +57,6 @@ export function createHingeObserver(root: number | RootTag): HingeObserver {
     return true;
   };
   update(NativeHinges.getSnapshot(rootTag).hinges);
-  const refresh = () => {
-    if (update(NativeHinges.getSnapshot(rootTag).hinges)) {
-      for (const callback of listeners) callback();
-    }
-  };
   return {
     get: () => snapshot,
     subscribe: (listener) => {
@@ -69,10 +65,11 @@ export function createHingeObserver(root: number | RootTag): HingeObserver {
       if (listeners.size === 1) {
         subscription = NativeHinges.onHingesChange((event) => {
           if (event.rootTag !== rootTag) return;
-          refresh();
+          if (update(event.hinges)) {
+            for (const callback of listeners) callback();
+          }
         });
         NativeHinges.startObserving(rootTag);
-        refresh();
       }
       return () => {
         if (!listeners.delete(notify)) return;

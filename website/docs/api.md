@@ -58,7 +58,7 @@ Subscribe callbacks receive no arguments. Read `get()` to obtain the latest snap
 function createHingeObserver(rootTag: number | RootTag): HingeObserver;
 ```
 
-Creates an observer for an existing React root. Obtain its tag from React Native's `RootTagContext` or a native host integration. Creation reads the native cache once; `get()` returns the latest observed snapshot and subscriptions keep it current. The last native subscriber releases observation and the cache. See [observer usage](./observers.md).
+Creates an observer for an existing React root. Obtain its tag from React Native's `RootTagContext` or a native host integration. Creation reads the native cache once as a seed; `get()` returns the latest observed snapshot, and subscribing triggers a native replay of the current snapshot, with later updates arriving as native change events. The last native subscriber releases observation and the cache. See [observer usage](./observers.md).
 
 ## AnimatedHingesProvider
 

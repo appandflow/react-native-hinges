@@ -19,6 +19,6 @@ unsubscribe();
 
 Creation seeds the snapshot from the native cache; `get()` synchronously reads the JS-owned snapshot. Returned arrays and entries are immutable, and equivalent snapshots retain their identity. Before a native reading is available it returns `[]`.
 
-`subscribe()` starts observation for the selected root. Callbacks receive no arguments; read `get()` for the current value. Multiple subscriptions on this observer share one native subscription; separate observers and animated hooks are reference-counted natively. Unsubscribing the final consumer releases native observation and clears its native cache. The observer retains its last delivered snapshot until a later subscription refreshes it.
+`subscribe()` starts observation for the selected root, which triggers a native replay of the current snapshot as an event; later updates also arrive with the native change event. Callbacks receive no arguments; read `get()` for the current value. Multiple subscriptions on this observer share one native subscription; separate observers and animated hooks are reference-counted natively. Unsubscribing the final consumer releases native observation and clears its native cache. The observer retains its last delivered snapshot until a later subscription.
 
 Creating an observer or calling `get()` alone does not start native observation. Subscribe when readings must remain current. No process-wide root is selected implicitly.

@@ -124,6 +124,18 @@ function SetupConsumer() {
   return null;
 }
 
+it('throws a clear error when useAnimatedHinges renders without a RootTagContext provider', () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  expect(() =>
+    act(() => {
+      create(<SetupConsumer />);
+    }),
+  ).toThrow(
+    'useAnimatedHinges must render inside a React Native root: RootTagContext is 0 (or invalid). ' +
+      'In tests, wrap the tree in <RootTagContext.Provider value={1}> (cast as RootTag if needed in TS).',
+  );
+});
+
 it('does not acquire observation if unmounted before the UI registration acknowledgment', async () => {
   let renderer: ReturnType<typeof create>;
   await act(() => {

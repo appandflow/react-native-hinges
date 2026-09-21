@@ -1,8 +1,8 @@
-import { useContext, useLayoutEffect, useMemo } from 'react';
+import { useLayoutEffect, useMemo } from 'react';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
-import { RootTagContext } from 'react-native';
 import { useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { createHingeObserver, mapHinges, type Hinge } from './HingeObserver';
+import { useRootTag } from './useRootTag';
 import NativeHinges from './HingesModule';
 import type { HingesChangeEvent } from './NativeHinges';
 
@@ -13,7 +13,7 @@ import type { HingesChangeEvent } from './NativeHinges';
  * The shared value starts from the native cache and retains its last value after unmount.
  */
 export function useAnimatedHinges(): SharedValue<readonly Hinge[]> {
-  const rootTag = Number(useContext(RootTagContext));
+  const rootTag = useRootTag('useAnimatedHinges');
   const observer = useMemo(() => createHingeObserver(rootTag), [rootTag]);
   const hinges = useSharedValue(observer.get());
   const event = useEvent<HingesChangeEvent>(

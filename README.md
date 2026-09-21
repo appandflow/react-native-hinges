@@ -41,6 +41,10 @@ No provider or view ref is required. The hook uses React Native's `RootTagContex
 and observes the existing native root. Multiple hooks on one root share native
 observation. Separate roots keep separate snapshots; there is no implicit global window.
 
+`useHinges()` throws if rendered outside a React Native root, where `RootTagContext`
+is still its default of `0`. In tests without an `AppContainer` (such as plain
+`react-test-renderer`), wrap the tree in `<RootTagContext.Provider value={1}>`.
+
 Each hinge has `status: 'unknown' | 'closed' | 'partiallyOpen' | 'fullyOpen'` and
 `angle: number | null` in radians. An empty array means no readings are available
 (including before initialization). Array order is not a persistent identity.

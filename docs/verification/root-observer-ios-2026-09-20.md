@@ -75,3 +75,18 @@ The final `stim logs --errors` check had no matching records. Evidence is the
 retained task screenshot `root-hinges-ios/surface-presenter-reload.png`.
 This validates static observation and reload recovery, not changing iOS angles
 or multiple simultaneously mounted surfaces.
+
+## Codegen module registration
+
+`RCT_EXPORT_MODULE(NativeHinges)` was replaced with an explicit `+moduleName`
+returning `NativeHinges`. The generated `RCTModuleProviders.mm` maps that name
+to `HingesModule`, so legacy static registration is unnecessary. The generated
+`NativeHingesSpecBase` does not implement the module name required by React
+Native's module protocol.
+
+A fresh native build passed in 10.2 seconds compilation and 36.7 seconds total
+on the same Duo. Its cold launch resolved the module and showed 0.0 degrees,
+`closed`, one initial Reanimated reading, and 0.000 radians in both the React
+hook and standalone observer. The final runtime error query had no matches.
+Evidence: `root-hinges-ios/codegen-module-registration.png`. No additional
+reload, native angle changes, or broader platform validation was performed.

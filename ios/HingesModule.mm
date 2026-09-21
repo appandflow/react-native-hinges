@@ -27,7 +27,10 @@
   __weak RCTSurfacePresenter *_surfacePresenter;
 }
 
-RCT_EXPORT_MODULE(NativeHinges)
++ (NSString *)moduleName
+{
+  return @"NativeHinges";
+}
 
 @synthesize moduleRegistry = _moduleRegistry;
 

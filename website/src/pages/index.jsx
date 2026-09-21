@@ -21,7 +21,10 @@ function HingePreview() {
   const fold = ((Math.PI - angle) / 2).toFixed(3);
 
   return (
-    <figure className={styles.preview}>
+    <figure
+      className={styles.preview}
+      aria-label="Illustrative hinge fold controls with example posture and angle labels. These are not live device readings."
+    >
       <div className={styles.previewHeader}>
         <span className={styles.liveDot} />
         <span>NATIVE HINGE STATE</span>

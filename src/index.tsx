@@ -1,6 +1,6 @@
-import { useContext, useMemo, useSyncExternalStore } from 'react';
-import { RootTagContext } from 'react-native';
+import { useMemo, useSyncExternalStore } from 'react';
 import { createHingeObserver, type Hinge } from './HingeObserver';
+import { useRootTag } from './useRootTag';
 export { createHingeObserver } from './HingeObserver';
 export type { Hinge, HingeStatus, HingeObserver } from './HingeObserver';
 
@@ -10,7 +10,7 @@ export type { Hinge, HingeStatus, HingeObserver } from './HingeObserver';
  * available and on unsupported platforms. Angles remain null when unavailable or ambiguous.
  */
 export function useHinges(): readonly Hinge[] {
-  const rootTag = useContext(RootTagContext);
+  const rootTag = useRootTag('useHinges');
   const observer = useMemo(() => createHingeObserver(rootTag), [rootTag]);
   return useSyncExternalStore(observer.subscribe, observer.get, observer.get);
 }

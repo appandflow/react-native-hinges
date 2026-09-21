@@ -47,6 +47,8 @@ The example reads the first hinge and hides the card when its angle is unavailab
 
 No provider is needed. The regular hook, explicit observers, and animated hooks share native observation for the same React root. Each animated hook owns a shared value.
 
+`useAnimatedHinges()` throws if rendered outside a React Native root, where `RootTagContext` is still its default of `0`. In tests without an `AppContainer`, wrap the tree in `<RootTagContext.Provider value={1 as unknown as RootTag}>`.
+
 ## Shared-value contract
 
 ```ts

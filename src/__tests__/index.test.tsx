@@ -128,6 +128,27 @@ it('keeps React snapshots stable until notification even if the native cache adv
   off();
 });
 
+function NoRootConsumer() {
+  useHinges();
+  return null;
+}
+
+it('throws a clear error when useHinges renders without a RootTagContext provider', () => {
+  const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    expect(() =>
+      act(() => {
+        create(<NoRootConsumer />);
+      }),
+    ).toThrow(
+      'useHinges must render inside a React Native root: RootTagContext is 0 (or invalid). ' +
+        'In tests, wrap the tree in <RootTagContext.Provider value={1 as unknown as RootTag}>.',
+    );
+  } finally {
+    error.mockRestore();
+  }
+});
+
 it('refreshes state that changed between observer creation and subscription', () => {
   const observer = createHingeObserver(1);
   expect(observer.get()).toEqual([]);

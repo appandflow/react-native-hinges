@@ -93,26 +93,38 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
   const [section, setSection] = useState<Section>('Journal');
   const entry = sections[section];
   const [preview, setPreview] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
   const [width, setWidth] = useState(0);
   return (
     <>
       <ScrollView
         style={styles.screen}
         contentContainerStyle={{
-          paddingTop: headerHeight + 28,
+          paddingTop: headerHeight + 24,
           paddingBottom: insets.bottom + 24,
           paddingLeft: insets.left + 24,
           paddingRight: insets.right + 24,
-          gap: 24,
+          gap: 20,
         }}
       >
-        <Text style={styles.edition}>VOL. 01 / THE OUTDOORS</Text>
-        <View>
-          <Text style={styles.heading}>{entry.title}</Text>
-          <Text style={styles.subtitle}>{entry.subtitle}</Text>
-          {ready && occlusions.length > 0 && (
-            <Text style={styles.occlusionCaption}>RESERVED SPACE · CONTROLS CLEAR</Text>
-          )}
+        <View style={styles.introduction}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={controlsVisible ? 'Hide demo controls' : 'Show demo controls'}
+            onPress={() => {
+              setControlsVisible(!controlsVisible);
+              setPreview(false);
+            }}
+          >
+            <Text style={styles.edition}>VOL. 01 / THE OUTDOORS</Text>
+          </Pressable>
+          <View>
+            <Text style={styles.heading}>{entry.title}</Text>
+            <Text style={styles.subtitle}>{entry.subtitle}</Text>
+            {ready && occlusions.length > 0 && (
+              <Text style={styles.occlusionCaption}>RESERVED SPACE · CONTROLS CLEAR</Text>
+            )}
+          </View>
         </View>
         <ReservedRegionsProvider onLayout={(event) => setWidth(event.nativeEvent.layout.width)} style={styles.spread}>
           <Spread width={width} preview={preview} section={section} />
@@ -121,19 +133,21 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
         <Text style={styles.description}>
           Open a little. Let the light in. Your journal follows the fold, with room for every word.
         </Text>
-        <View style={styles.row}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: preview }}
-            style={styles.button}
-            onPress={() => setPreview(!preview)}
-          >
-            <Text style={styles.buttonText}>{preview ? 'Use native angle' : 'Preview motion'} ↗</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" style={styles.labButton} onPress={onOpenLab}>
-            <Text style={styles.labText}>Sensor lab ↗</Text>
-          </Pressable>
-        </View>
+        {controlsVisible && (
+          <View style={styles.row}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: preview }}
+              style={styles.button}
+              onPress={() => setPreview(!preview)}
+            >
+              <Text style={styles.buttonText}>{preview ? 'Use native angle' : 'Preview motion'} ↗</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" style={styles.labButton} onPress={onOpenLab}>
+              <Text style={styles.labText}>Sensor lab ↗</Text>
+            </Pressable>
+          </View>
+        )}
         <Text style={styles.credit}>react-native-hinges + react-native-reserved-regions</Text>
       </ScrollView>
       {ready &&
@@ -332,11 +346,12 @@ const styles = StyleSheet.create({
   },
   occlusionCaption: { color: '#edc278', fontSize: 8, letterSpacing: 1.5, marginTop: 14 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
-  brand: { flexShrink: 1, color: '#e9eddb', fontSize: 12, letterSpacing: 3, fontWeight: '700' },
+  brand: { marginRight: 16, flexShrink: 1, color: '#e9eddb', fontSize: 12, letterSpacing: 3, fontWeight: '700' },
+  introduction: { gap: 12 },
   edition: { color: '#829c8d', fontSize: 8, letterSpacing: 1.2 },
   heading: { color: '#eef0e3', fontSize: 37, fontWeight: '500', letterSpacing: -1.8 },
   subtitle: { color: '#a6b7a6', fontSize: 13, lineHeight: 20, marginTop: 8 },
-  spread: { height: 376, marginTop: 16 },
+  spread: { height: 376 },
   divisionGuide: { position: 'absolute', left: 0, right: 0, top: 0, height: 344, overflow: 'hidden' },
   divisionMarker: { position: 'absolute', backgroundColor: '#c3e1a0', opacity: 0.35 },
   page: { position: 'absolute', top: 0, height: 344, overflow: 'hidden', borderRadius: 12, padding: 17 },

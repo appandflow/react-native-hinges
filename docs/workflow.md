@@ -103,6 +103,60 @@ For CocoaPods, use a Ruby version compatible with `example/Gemfile`, then run
 `bundle install` and `bundle exec pod install --project-directory=ios` from
 `example/`. Set `LANG=en_US.UTF-8` and `LC_ALL=en_US.UTF-8`.
 
+### Automated Android check
+
+`pnpm e2e:android` drives the example on an attached Android emulator, which
+must be an emulator because the hinge sensor is driven through the emulator
+console, and needs no Metro server. It builds the example release variant, which the
+React Native template signs with the checked-in debug keystore and ships with
+the JavaScript bundle embedded, installs it, then cold launches it.
+
+```sh
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+E2E_ANDROID_SERIAL=emulator-5590 pnpm e2e:android
+```
+
+Set `E2E_ANDROID_SERIAL` when more than one device is attached; with a single
+attached device the script uses it. Set `E2E_SKIP_BUILD=1` to reuse the APK that
+is already installed. The Gradle build is limited to the ABI the target device
+reports.
+
+The check opens the Sensor lab and asserts the mode pill reads `NATIVE HINGE`.
+It then drives the hinge with
+`adb -s <serial> emu sensor set hinge-angle0 <degrees>` and asserts the native
+angle reads `45.0°` with status `partiallyOpen` at 45 degrees, and `180.0°` with
+status `fullyOpen` at 180 degrees. It then cold
+launches the app again, which lands on Field Notes, and asserts the
+`NATIVE 180.0°` readout there. Every asserted state is screenshotted into
+`e2e/artifacts/`, which the existing `artifacts/` ignore rule already covers. A
+failed assertion exits non-zero and prints the accessibility snapshot.
+
+The return to Field Notes is a relaunch rather than a press on the Sensor lab's
+own Back to Field Notes control, because that control occupies the bottom 44dp
+of an edge-to-edge window and the system taskbar covers it on a foldable inner
+display.
+
+The target needs a hinge sensor. The `pixel_fold` and `pixel_9_pro_fold` AVD
+profiles define one hinge over a 0 to 180 degree range with posture bands of
+0-30, 30-150 and 150-180. On an ordinary phone emulator there is no
+`hinge-angle0` sensor and the check fails at the first angle assertion.
+
+The status assertions need the emulator to publish device states. Confirm with
+`adb -s <serial> shell cmd device_state print-states`, which should list
+`CLOSED`, `HALF_OPENED` and `OPENED`. An emulator that lists only `DEFAULT` has
+not brought up its posture configuration, so the library reports a live angle
+with the status left at `unknown` and the status assertions fail. Restarting
+that emulator restores the device states.
+
+The check runs `cmd device_state state reset` before it drives the sensor. A
+leftover posture override from an earlier session pins the committed state, and
+the hinge angle then stops driving it. Posture also lands a few seconds after
+the angle does, so the status assertions allow 15 seconds while the angle
+assertions allow 5.
+
+`.github/workflows/e2e-android.yml` runs the same script on `workflow_dispatch`
+and on pull requests carrying the `e2e-android` label.
+
 ## Pull requests
 
 Before committing, run all checks above and the native builds affected by the

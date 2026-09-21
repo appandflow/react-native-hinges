@@ -147,7 +147,7 @@ multiple-hinge hardware have not yet been validated.
 
 ## Example
 
-[Watch Field Notes on an Android emulator](https://github.com/user-attachments/assets/7f69106d-2649-4591-917c-9aa7743fd5fa): native fold geometry controls the page layout while hinge angles animate its perspective. The example includes the Worklets patch described above.
+[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase.mp4): native Android emulator footage mapped onto a Galaxy Z Fold 3 model. Hinge angles drive fades and slides; reserved regions keep the pages and toolbar clear of the fold and cutout. The example includes the Worklets patch described above.
 
 ## Development
 

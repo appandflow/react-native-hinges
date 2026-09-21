@@ -59,7 +59,7 @@ returns to native observations. Preview does not generate reserved-region geomet
 
 The example installs `react-native-reserved-regions@0.1.0-alpha.2` from npm.
 
-[Watch the native Android emulator demo](https://github.com/user-attachments/assets/7f69106d-2649-4591-917c-9aa7743fd5fa). The recording uses the matching local alpha.2 candidate and the example Worklets patch; it is not a physical-device or npm-installed recording.
+[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase.mp4). The 27.6-second video maps native Android emulator footage onto a [Galaxy Z Fold 3 model by RHModels](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model). The model follows the recorded native angle; close-ups highlight the fold region and camera clearance. The recording uses the example Worklets patch and npm-installed reserved regions alpha.2. The illustrated device is not a physical-device recording.
 
 ## Sensor Lab
 

@@ -60,12 +60,22 @@ function createHingeObserver(rootTag: number | RootTag): HingeObserver;
 
 Creates an observer for an existing React root. Obtain its tag from React Native's `RootTagContext` or a native host integration. Creation reads the native cache once; `get()` returns the latest observed snapshot and subscriptions keep it current. The last native subscriber releases observation and the cache. See [observer usage](./observers.md).
 
+## AnimatedHingesProvider
+
+```tsx
+function AnimatedHingesProvider(props: { children?: ReactNode }): ReactNode;
+```
+
+Provides one shared value to its subtree and renders one hidden native `HingesObserverView` that observes hinges and emits changes to Reanimated's UI runtime. Requires the optional Reanimated and Worklets peers. Place it above every `useAnimatedHinges()` consumer; one provider per tree is enough.
+
+The view is `0x0`, absolutely positioned and not interactive, so it does not affect layout. Unmounting the provider removes it and ends that observation.
+
 ## useAnimatedHinges
 
 ```ts
 function useAnimatedHinges(): SharedValue<readonly Hinge[]>;
 ```
 
-Returns a shared value initialized from this React root's native cache or `[]`. Requires the optional Reanimated and Worklets peers. Native events update it directly on the UI runtime. No provider is required. Read with `get()` inside worklets and do not mutate it.
+Returns the enclosing provider's shared value, seeded with `[]` and updated on the UI runtime when the native view reports a change. Read with `get()` inside worklets and do not mutate it. Throws when rendered outside `AnimatedHingesProvider`.
 
-Each hook owns its shared value and native subscription. A retained shared value keeps its last snapshot after unmount. See [Reanimated integration](./reanimated.md).
+Every consumer under one provider reads the same shared value. An externally retained shared value keeps its last snapshot after unmount. See [Reanimated integration](./reanimated.md).

@@ -8,7 +8,8 @@ import com.facebook.react.module.model.ReactModuleInfoProvider
 import com.facebook.react.uimanager.ViewManager
 
 class HingesViewPackage : BaseReactPackage() {
-  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> = emptyList()
+  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
+    listOf(HingesObserverViewManager())
 
   override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
     if (name == HingesModule.NAME) HingesModule(reactContext) else null

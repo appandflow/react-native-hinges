@@ -23,7 +23,7 @@ This integration is included in `0.1.0-alpha.2`. See [installation](./installati
 
 ```tsx
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import { useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { AnimatedHingesProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
 
 function HingeCard() {
   const hinges = useAnimatedHinges();
@@ -39,15 +39,19 @@ function HingeCard() {
 }
 
 export default function App() {
-  return <HingeCard />;
+  return (
+    <AnimatedHingesProvider>
+      <HingeCard />
+    </AnimatedHingesProvider>
+  );
 }
 ```
 
 The example reads the first hinge and hides the card when its angle is unavailable. An app supporting several hinges must choose the appropriate observation; array order is not a stable hardware identity.
 
-No provider is needed. The regular hook, explicit observers, and animated hooks share native observation for the same React root. Each animated hook owns a shared value.
+`AnimatedHingesProvider` is required. It holds the shared value and renders the native view that feeds it, so `useAnimatedHinges()` throws when there is no provider above it. Every consumer under one provider reads the same shared value. The regular hook and explicit observers keep their own root-scoped native observation and do not need the provider.
 
-`useAnimatedHinges()` throws if rendered outside a React Native root, where `RootTagContext` is still its default of `0`. In tests without an `AppContainer`, wrap the tree in `<RootTagContext.Provider value={1 as unknown as RootTag}>`.
+The provider is independent of `RootTagContext`, so a test can render it without an `AppContainer`.
 
 ## Shared-value contract
 
@@ -55,7 +59,7 @@ No provider is needed. The regular hook, explicit observers, and animated hooks 
 function useAnimatedHinges(): SharedValue<readonly Hinge[]>;
 ```
 
-The shared value starts from the native cache or `[]`. Hinge status and raw radians have the same meaning as the ordinary API; unavailable angles remain `null`.
+The shared value starts at `[]` and receives the provider view's first snapshot once it is mounted. Hinge status and raw radians have the same meaning as the ordinary API; unavailable angles remain `null`.
 
 Read it with `get()` inside a worklet such as `useAnimatedStyle`. Treat the value as read-only even though the underlying Reanimated type exposes setters. Reading a shared value during React rendering is not supported; use the regular `useHinges()` hook for rendered text. See [Reanimated's shared-value guidance](https://docs.swmansion.com/react-native-reanimated/docs/core/useSharedValue/).
 
@@ -79,10 +83,14 @@ Keeping the animated subtree mounted avoided this failure in the tested case;
 apps that gate its mount need to apply the patch, rebuild the native app, and
 validate it themselves.
 
+## How updates are delivered
+
+`AnimatedHingesProvider` renders one `HingesObserverView`, a Fabric component the library ships. The view is `0x0`, absolutely positioned and not interactive. On iOS it holds a `UIHingeInteraction`; on Android it observes the Activity window's folding features and the default hinge-angle sensor while attached. Each change is emitted as the component's own `onHingesChange` direct event, which Reanimated's `useEvent` handler receives on the UI runtime. This is the ordinary public path for a custom Fabric view event, so no private React Native or Reanimated type is involved.
+
+Reanimated registers a worklet event handler on the UI runtime asynchronously. After mount the provider therefore hops through `scheduleOnUI` and back with `scheduleOnRN` before sending the view's `refresh` command, which makes the view re-emit its current snapshot for the now-registered handler. Without that hop the first snapshot can be emitted before anything is listening.
+
 ## Lifetime and validation limits
 
-Unmounting unregisters the root-tag event handler and releases the native subscription. An externally retained shared value keeps its last snapshot. The native cache is cleared when the root has no subscribers.
+Unmounting the provider removes the native view, which ends its observation. An externally retained shared value keeps its last snapshot.
 
-This prototype registers the handler returned by Reanimated 4.7's `useEvent` directly against the React root tag. Android uses RN 0.88's internal Fabric event emitter type to route the event only to native observers; iOS uses `notifyObserversOfEvent` and explicitly registers an already-loaded Reanimated module with that dispatcher. These integration points need revalidation when upgrading React Native or Reanimated. They avoid delivering angle updates through the JavaScript thread first.
-
-The root-scoped Android implementation has been tested with fixed-angle cold launches and native angle updates during a one-second JS stall. These emulator checks do not establish physical-device rates or first-frame availability. A simulated-preview animation does not verify sensor delivery.
+The Android path has been tested on a `pixel_9_pro_fold` emulator, driving `hinge-angle0` from 45 to 180 degrees and reading the angle and status back from `useAnimatedHinges()`. The iOS path has been tested on an iPhone Duo simulator, which reports only a static closed hinge. Changing iOS angles, physical hardware, and first-frame availability are not established. A simulated-preview animation does not verify sensor delivery.

@@ -91,8 +91,11 @@ The optional `react-native-hinges/reanimated` entry point requires Reanimated
 the Worklets Babel plugin and rebuild native dependencies using
 [Reanimated's setup guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
 
+Wrap the consuming tree in `AnimatedHingesProvider`. It renders one hidden native
+view that observes hinges and delivers each update to Reanimated's UI runtime.
+
 ```tsx
-import { useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { AnimatedHingesProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
 import { useAnimatedStyle } from 'react-native-reanimated';
 
 function useHingeCardStyle() {
@@ -105,15 +108,23 @@ function useHingeCardStyle() {
     };
   });
 }
+
+export default function App() {
+  return (
+    <AnimatedHingesProvider>
+      <Screen />
+    </AnimatedHingesProvider>
+  );
+}
 ```
 
-No animated provider is needed. The hook returns a read-only-by-contract
-`SharedValue<readonly Hinge[]>`, initialized from the native cache or `[]`.
-Read it inside worklets and do not write to it. Native events update the value
-on the UI runtime, preserving raw radians and nullable angles without JS delivery
-as an intermediate step. The library adds no smoothing or sampling-frequency guarantee.
+The hook returns the provider's read-only-by-contract `SharedValue<readonly Hinge[]>`,
+seeded with `[]`. Read it inside worklets and do not write to it. It throws when
+rendered without the provider. Native events update the value on the UI runtime,
+preserving raw radians and nullable angles without JS delivery as an intermediate
+step. The library adds no smoothing or sampling-frequency guarantee.
 
-Unmounting unregisters the worklet and releases its native subscription. An
+Unmounting the provider removes its native view and ends that observation. An
 externally retained shared value keeps its last snapshot. See the
 [integration guide](website/docs/reanimated.md) for setup and compatibility limits.
 

@@ -1,12 +1,10 @@
 import * as React from 'react';
 import { beforeEach, expect, it, jest } from '@jest/globals';
 import { act, create } from 'react-test-renderer';
-import { RootTagContext, type RootTag } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
-import { useAnimatedHinges } from '../reanimated';
+import { AnimatedHingesProvider, useAnimatedHinges } from '../reanimated';
 import type { Hinge } from '../index';
-import NativeHinges from '../HingesModule';
-import type { HingesChangeEvent } from '../NativeHinges';
+import { Commands, type HingesObserverChangeEvent } from '../HingesObserverViewNativeComponent';
 
 const mockUIQueue: (() => void)[] = [];
 const mockRNQueue: (() => void)[] = [];
@@ -19,10 +17,12 @@ function flushSetup() {
   while (mockRNQueue.length) mockRNQueue.shift()?.();
 }
 
-const mockWorklets = new Map<number, Set<(event: HingesChangeEvent) => void>>();
+const mockWorkletHandlers = new Set<(event: HingesObserverChangeEvent) => void>();
 jest.mock('react-native-reanimated', () => {
   const react = jest.requireActual<typeof React>('react');
   return {
+    __esModule: true,
+    createAnimatedComponent: (component: unknown) => component,
     useSharedValue: <T,>(initial: T) =>
       react.useMemo(() => {
         let current = initial;
@@ -33,125 +33,99 @@ jest.mock('react-native-reanimated', () => {
           },
         };
       }, []),
-    useEvent: (handler: (event: HingesChangeEvent) => void) =>
-      react.useMemo(
-        () => ({
-          workletEventHandler: {
-            registerForEvents: (root: number) =>
-              mockUIQueue.push(() => {
-                const handlers = mockWorklets.get(root) ?? new Set();
-                handlers.add(handler);
-                mockWorklets.set(root, handlers);
-              }),
-            unregisterFromEvents: (root: number) =>
-              mockUIQueue.push(() => {
-                mockWorklets.get(root)?.delete(handler);
-              }),
-          },
-        }),
-        [],
-      ),
+    useEvent: (handler: (event: HingesObserverChangeEvent) => void) =>
+      react.useMemo(() => {
+        mockWorkletHandlers.add(handler);
+        return handler;
+      }, []),
   };
 });
-jest.mock('../HingesModule', () => ({
+jest.mock('../HingesModule', () => ({ __esModule: true, default: {} }));
+jest.mock('../HingesObserverViewNativeComponent', () => ({
   __esModule: true,
-  default: {
-    getSnapshot: () => ({ hinges: [] }),
-    startObserving: jest.fn((rootTag: number) => {
-      for (const handler of mockWorklets.get(rootTag) ?? [])
-        handler({ rootTag, hinges: [{ status: 'closed', angle: 0, hasAngle: true }] });
-    }),
-    stopObserving: jest.fn(),
-  },
+  default: 'HingesObserverView',
+  Commands: { refresh: jest.fn() },
 }));
+
+const mockNativeView = { id: 'hinges-observer-view' };
+function render(element: React.ReactElement) {
+  return create(element, { createNodeMock: () => mockNativeView });
+}
+function emit(hinges: HingesObserverChangeEvent['hinges']) {
+  for (const handler of mockWorkletHandlers) handler({ hinges });
+}
+
 beforeEach(() => {
-  mockWorklets.clear();
+  mockWorkletHandlers.clear();
   mockUIQueue.length = 0;
   mockRNQueue.length = 0;
   jest.clearAllMocks();
 });
 
-it('registers before acquiring native observation, isolates roots, and retains updates without React renders', async () => {
-  const values = new Map<string, SharedValue<readonly Hinge[]>>();
+it('seeds an empty shared value, then updates it from native events without a React render', async () => {
+  let value: SharedValue<readonly Hinge[]> | undefined;
   let renders = 0;
-  function Consumer({ name }: { name: string }) {
+  function Consumer() {
     const hinges = useAnimatedHinges();
     React.useEffect(() => {
-      values.set(name, hinges);
+      value = hinges;
       renders++;
     });
     return null;
   }
-  const first = <Consumer name="first" />;
-  const tree = (two: boolean) => (
-    <>
-      <RootTagContext.Provider value={1 as unknown as RootTag}>
-        {first}
-        {two && <Consumer name="second" />}
-      </RootTagContext.Provider>
-      <RootTagContext.Provider value={2 as unknown as RootTag}>
-        <Consumer name="other" />
-      </RootTagContext.Provider>
-    </>
-  );
-  let renderer: ReturnType<typeof create>;
   await act(() => {
-    renderer = create(tree(true));
+    render(
+      <AnimatedHingesProvider>
+        <Consumer />
+      </AnimatedHingesProvider>,
+    );
   });
-  expect(NativeHinges.startObserving).not.toHaveBeenCalled();
-  await act(flushSetup);
-  expect(values.get('first')?.get()).toEqual([{ status: 'closed', angle: 0 }]);
+  expect(value?.get()).toEqual([]);
+
   const previousRenders = renders;
-  for (const handler of mockWorklets.get(1) ?? [])
-    handler({ rootTag: 1, hinges: [{ status: 'future', angle: 123, hasAngle: false }] });
-  expect(values.get('first')?.get()).toEqual([{ status: 'unknown', angle: null }]);
-  expect(values.get('second')?.get()).toEqual([{ status: 'unknown', angle: null }]);
-  expect(values.get('other')?.get()).toEqual([{ status: 'closed', angle: 0 }]);
+  emit([{ status: 'partiallyOpen', angle: Math.PI / 2, hasAngle: true }]);
+  expect(value?.get()).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
+  emit([{ status: 'future', angle: 123, hasAngle: false }]);
+  expect(value?.get()).toEqual([{ status: 'unknown', angle: null }]);
   expect(renders).toBe(previousRenders);
-  await act(() => renderer.update(tree(false)));
-  await act(flushSetup);
-  expect(mockWorklets.get(1)?.size).toBe(1);
-  expect(NativeHinges.stopObserving).toHaveBeenCalledWith(1);
-  await act(() => renderer.unmount());
-  await act(flushSetup);
-  expect(mockWorklets.get(1)?.size).toBe(0);
-  expect(mockWorklets.get(2)?.size).toBe(0);
-  expect(values.get('first')?.get()).toEqual([{ status: 'unknown', angle: null }]);
 });
 
-function SetupConsumer() {
+it('requests the current snapshot only after the worklet registration hop', async () => {
+  await act(() => {
+    render(<AnimatedHingesProvider />);
+  });
+  expect(Commands.refresh).not.toHaveBeenCalled();
+  await act(flushSetup);
+  expect(Commands.refresh).toHaveBeenCalledWith(mockNativeView);
+});
+
+it('does not request a snapshot when unmounted before the hop completes', async () => {
+  let renderer: ReturnType<typeof create>;
+  await act(() => {
+    renderer = render(<AnimatedHingesProvider />);
+  });
+  await act(() => renderer.unmount());
+  await act(flushSetup);
+  expect(Commands.refresh).not.toHaveBeenCalled();
+});
+
+function OrphanConsumer() {
   useAnimatedHinges();
   return null;
 }
 
-it('throws a clear error when useAnimatedHinges renders without a RootTagContext provider', () => {
+it('throws a clear error when useAnimatedHinges renders outside the provider', () => {
   const error = jest.spyOn(console, 'error').mockImplementation(() => {});
   try {
     expect(() =>
       act(() => {
-        create(<SetupConsumer />);
+        render(<OrphanConsumer />);
       }),
     ).toThrow(
-      'useAnimatedHinges must render inside a React Native root: RootTagContext is 0 (or invalid). ' +
-        'In tests, wrap the tree in <RootTagContext.Provider value={1 as unknown as RootTag}>.',
+      'useAnimatedHinges must render inside an AnimatedHingesProvider from react-native-hinges/reanimated. ' +
+        'Wrap the tree in <AnimatedHingesProvider> at or above this component.',
     );
   } finally {
     error.mockRestore();
   }
-});
-
-it('does not acquire observation if unmounted before the UI registration acknowledgment', async () => {
-  let renderer: ReturnType<typeof create>;
-  await act(() => {
-    renderer = create(
-      <RootTagContext.Provider value={1 as unknown as RootTag}>
-        <SetupConsumer />
-      </RootTagContext.Provider>,
-    );
-  });
-  await act(() => renderer.unmount());
-  await act(flushSetup);
-  expect(NativeHinges.startObserving).not.toHaveBeenCalled();
-  expect(NativeHinges.stopObserving).not.toHaveBeenCalled();
-  expect(mockWorklets.get(1)?.size).toBe(0);
 });

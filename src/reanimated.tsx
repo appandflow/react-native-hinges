@@ -1,55 +1,79 @@
-import { useLayoutEffect, useMemo } from 'react';
+import { createContext, useContext, useEffect, useRef, type ComponentRef, type ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
-import { useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated';
-import { createHingeObserver, mapHinges, type Hinge } from './HingeObserver';
-import { useRootTag } from './useRootTag';
-import NativeHinges from './HingesModule';
-import type { HingesChangeEvent } from './NativeHinges';
+import { createAnimatedComponent, useEvent, useSharedValue, type SharedValue } from 'react-native-reanimated';
+import { mapHinges, type Hinge } from './HingeObserver';
+import HingesObserverView, {
+  Commands,
+  type HingesObserverChangeEvent,
+  type NativeProps,
+} from './HingesObserverViewNativeComponent';
+
+const HingesSharedValueContext = createContext<SharedValue<readonly Hinge[]> | null>(null);
+const AnimatedHingesObserverView = createAnimatedComponent(HingesObserverView);
+const styles = StyleSheet.create({
+  observer: { position: 'absolute', width: 0, height: 0 },
+});
 
 /**
- * Returns root-scoped native hinge snapshots on the UI runtime, without a provider.
- * Read with get() inside worklets; do not write to the value. Angles are raw radians,
- * with null for unavailable readings. No interpolation or sampling rate is imposed.
- * The shared value starts from the native cache and retains its last value after unmount.
+ * Observes hinges for its subtree and publishes them to a Reanimated shared value.
+ * Renders one hidden native view that delivers native updates straight to the UI runtime.
+ * Read the value with useAnimatedHinges.
  */
-export function useAnimatedHinges(): SharedValue<readonly Hinge[]> {
-  const rootTag = useRootTag('useAnimatedHinges');
-  const observer = useMemo(() => createHingeObserver(rootTag), [rootTag]);
-  const hinges = useSharedValue(observer.get());
-  const event = useEvent<HingesChangeEvent>(
-    (update) => {
+export function AnimatedHingesProvider({ children }: { children?: ReactNode }) {
+  const hinges = useSharedValue<readonly Hinge[]>([]);
+  const view = useRef<ComponentRef<typeof HingesObserverView> | null>(null);
+  const onHingesChange = useEvent<HingesObserverChangeEvent>(
+    (event) => {
       'worklet';
-      hinges.set(mapHinges(update.hinges));
+      hinges.set(mapHinges(event.hinges));
     },
-    ['onHingesChange', 'topHingesChange'],
+    ['onHingesChange'],
   );
 
-  // Reanimated 4.7 useEvent disguises its WorkletEventHandler as a callback; root events have no component prop to attach it.
-  const { workletEventHandler } = event as unknown as {
-    workletEventHandler: {
-      registerForEvents(tag: number): void;
-      unregisterFromEvents(tag: number): void;
-    };
-  };
-  useLayoutEffect(() => {
-    hinges.set(observer.get());
-    workletEventHandler.registerForEvents(rootTag);
+  useEffect(() => {
     let cancelled = false;
-    let started = false;
-    const start = () => {
-      if (cancelled) return;
-      started = true;
-      NativeHinges.startObserving(rootTag);
+    // Worklets only accepts a function defined on the React Native runtime in scheduleOnRN.
+    const requestSnapshot = () => {
+      if (cancelled || view.current === null) return;
+      Commands.refresh(view.current);
     };
-    // Reanimated registers events asynchronously on the UI scheduler. Acquire after it runs so initial replay is observed.
+    // Reanimated registers worklet event handlers on the UI runtime asynchronously; ask for the
+    // current snapshot only after a hop through it, so the handler exists when the view re-emits.
     scheduleOnUI(() => {
-      scheduleOnRN(start);
+      scheduleOnRN(requestSnapshot);
     });
     return () => {
       cancelled = true;
-      workletEventHandler.unregisterFromEvents(rootTag);
-      if (started) NativeHinges.stopObserving(rootTag);
     };
-  }, [rootTag, observer, hinges, workletEventHandler]);
+  }, []);
+
+  return (
+    <HingesSharedValueContext.Provider value={hinges}>
+      {children}
+      <AnimatedHingesObserverView
+        ref={view}
+        style={styles.observer}
+        pointerEvents="none"
+        // Reanimated's useEvent handler receives the raw payload, while codegen types the prop as a NativeSyntheticEvent.
+        onHingesChange={onHingesChange as unknown as NativeProps['onHingesChange']}
+      />
+    </HingesSharedValueContext.Provider>
+  );
+}
+
+/**
+ * Returns this provider's native hinge snapshots as a shared value on the UI runtime.
+ * Read with get() inside worklets; do not write to the value. Angles are raw radians,
+ * with null for unavailable readings. No interpolation or sampling rate is imposed.
+ */
+export function useAnimatedHinges(): SharedValue<readonly Hinge[]> {
+  const hinges = useContext(HingesSharedValueContext);
+  if (hinges === null) {
+    throw new Error(
+      'useAnimatedHinges must render inside an AnimatedHingesProvider from react-native-hinges/reanimated. ' +
+        'Wrap the tree in <AnimatedHingesProvider> at or above this component.',
+    );
+  }
   return hinges;
 }

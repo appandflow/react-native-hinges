@@ -122,3 +122,10 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+// The bundle task only watches JS sources under example/. The library sources live at the
+// repository root in this hoisted pnpm workspace, so register them as inputs too.
+tasks.matching { it.name.startsWith("createBundle") && it.name.endsWith("JsAndAssets") }.configureEach {
+    inputs.files(fileTree("../../../src") { include "**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx" })
+        .withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
+}

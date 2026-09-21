@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View, type LayoutRectangle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ReservedRegionsProvider, useReservedRegions, useReservedRegionsReady } from 'react-native-reserved-regions';
 import { useHinges } from 'react-native-hinges';
@@ -14,6 +14,7 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 
 const sections = {
@@ -92,6 +93,22 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
   });
   const [section, setSection] = useState<Section>('Journal');
   const entry = sections[section];
+  const [tabLayouts, setTabLayouts] = useState<Partial<Record<Section, LayoutRectangle>>>({});
+  const selectedLayout = tabLayouts[section];
+  const reducedMotion = useReducedMotion();
+  const selection = useSharedValue<LayoutRectangle>({ x: 0, y: 0, width: 0, height: 0 });
+  useEffect(() => {
+    if (!selectedLayout) return;
+    selection.set(
+      reducedMotion || selection.get().width === 0
+        ? selectedLayout
+        : withTiming(selectedLayout, { duration: 250, easing: Easing.bezier(0.77, 0, 0.175, 1) }),
+    );
+  }, [reducedMotion, selectedLayout, selection]);
+  const selectionStyle = useAnimatedStyle(() => {
+    const { x, y, width, height } = selection.get();
+    return { width, height, transform: [{ translateX: x }, { translateY: y }] };
+  });
   const [preview, setPreview] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [width, setWidth] = useState(0);
@@ -156,6 +173,7 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
             key={index}
             style={[styles.header, { left: space.start, width: space.end - space.start, height: headerHeight }]}
           >
+            <Animated.View pointerEvents="none" style={[styles.selection, selectionStyle, { left: -space.start }]} />
             {index === 0 && space.end - space.start >= 148 + space.items.length * 84 && (
               <Text numberOfLines={1} style={styles.brand}>
                 FIELD NOTES
@@ -166,12 +184,22 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
                 key={name}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: section === name }}
-                style={[styles.tab, section === name && styles.selectedTab]}
+                style={styles.tab}
+                onLayout={({ nativeEvent: { layout } }) => {
+                  const next = { ...layout, x: space.start + layout.x };
+                  setTabLayouts((previous) => {
+                    const current = previous[name];
+                    return current?.x === next.x &&
+                      current.y === next.y &&
+                      current.width === next.width &&
+                      current.height === next.height
+                      ? previous
+                      : { ...previous, [name]: next };
+                  });
+                }}
                 onPress={() => setSection(name)}
               >
-                <Text numberOfLines={1} style={[styles.tabText, section === name && styles.selectedTabText]}>
-                  {name}
-                </Text>
+                <TabLabel name={name} layout={tabLayouts[name]} selection={selection} />
               </Pressable>
             ))}
           </View>
@@ -186,6 +214,29 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
         />
       ))}
     </>
+  );
+}
+
+function TabLabel({
+  name,
+  layout,
+  selection,
+}: {
+  name: Section;
+  layout: LayoutRectangle | undefined;
+  selection: SharedValue<LayoutRectangle>;
+}) {
+  const style = useAnimatedStyle(() => {
+    const { x, width } = selection.get();
+    const overlap = layout
+      ? Math.max(0, Math.min(x + width, layout.x + layout.width) - Math.max(x, layout.x)) / layout.width
+      : 0;
+    return { color: interpolateColor(overlap, [0, 1], ['#c0cdb8', '#284031']) };
+  });
+  return (
+    <Animated.Text numberOfLines={1} style={[styles.tabText, style]}>
+      {name}
+    </Animated.Text>
   );
 }
 
@@ -239,7 +290,16 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
     Math.max(0, Math.min(Math.PI, preview ? previewAngle.get() : (hinges.get()[0]?.angle ?? Math.PI))),
   );
   const landscapeStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(angle.get(), [0, Math.PI], ['#384c59', '#abc9ba']),
+    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#302b50', '#d18a80', '#abc9ba']),
+  }));
+  const mountainFarStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#504366', '#a66e80', '#6b9380']),
+  }));
+  const mountainNearStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#332c49', '#704858', '#345d4d']),
+  }));
+  const lakeStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#29263f', '#553f53', '#24473f']),
   }));
   const journalStyle = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(angle.get(), [0, Math.PI], ['#b2ac92', '#f2ebd7']),
@@ -249,6 +309,7 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
     return { opacity, transform: [{ translateX: reducedMotion ? 0 : (1 - opacity) * 64 }] };
   });
   const sunStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#df7968', '#f4bd7e', '#f5edcb']),
     transform: [{ translateY: reducedMotion ? 0 : (1 - angle.get() / Math.PI) * 50 }],
     opacity: 0.45 + (angle.get() / Math.PI) * 0.55,
   }));
@@ -275,9 +336,9 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
             <Text style={styles.pageLabel}>A PLACE TO EXHALE</Text>
             <View pointerEvents="none" style={styles.landscapeArt}>
               <Animated.View style={[styles.sun, sunStyle]} />
-              <View style={styles.mountainFar} />
-              <View style={styles.mountainNear} />
-              <View style={styles.lake} />
+              <Animated.View style={[styles.mountainFar, mountainFarStyle]} />
+              <Animated.View style={[styles.mountainNear, mountainNearStyle]} />
+              <Animated.View style={[styles.lake, lakeStyle]} />
             </View>
             <View style={styles.landscapeFooter}>
               <Text style={styles.destination}>Into{'\n'}the quiet.</Text>
@@ -317,6 +378,7 @@ const styles = StyleSheet.create({
   header: {
     position: 'absolute',
     top: 0,
+    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -334,9 +396,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 8,
   },
-  selectedTab: { backgroundColor: '#edc278' },
+  selection: { position: 'absolute', top: 0, borderRadius: 10, backgroundColor: '#edc278' },
   tabText: { color: '#c0cdb8', fontSize: 13, fontWeight: '600' },
-  selectedTabText: { color: '#284031' },
   occlusionOutline: {
     position: 'absolute',
     borderWidth: 2,

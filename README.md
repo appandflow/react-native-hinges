@@ -4,11 +4,11 @@ Hinge posture and angle observations for React Native's New Architecture.
 
 ## Installation
 
-`0.1.0-alpha.1` is the functional release candidate. Use the command below once
+`0.1.0-alpha.2` is the functional release candidate. Use the command below once
 publication is verified; until then, run the repository example.
 
 ```sh
-npm install react-native-hinges@0.1.0-alpha.1
+npm install react-native-hinges@0.1.0-alpha.2
 ```
 
 Install iOS pods and rebuild your native app. This is an early alpha; see the

@@ -6,8 +6,8 @@ example and documentation site are private. Keep this document aligned with
 
 ## First functional alpha readiness
 
-`0.1.0-alpha.0` is a name-reservation placeholder. `0.1.0-alpha.1` is the first
-functional alpha described in [the release notes](docs/releases/0.1.0-alpha.1.md).
+`0.1.0-alpha.0` is a name-reservation placeholder. `0.1.0-alpha.2` is the first
+functional alpha described in [the release notes](docs/releases/0.1.0-alpha.2.md).
 Confirm registry publication with the commands below; a source commit is not proof
 that the version was published.
 

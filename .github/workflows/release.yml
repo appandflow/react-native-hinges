@@ -40,7 +40,7 @@ jobs:
             echo "Version already exists; verifying without republishing."
           else
             node -e 'const r=require(process.argv[1]); if(r.error?.code!=="E404") process.exit(1)' "$RUNNER_TEMP/registry.json"
-            npm publish "artifacts/react-native-hinges-$version.tgz" --provenance --access public --tag "$dist_tag"
+            npm publish "./artifacts/react-native-hinges-$version.tgz" --provenance --access public --tag "$dist_tag"
           fi
           for attempt in {1..12}; do
             if npm view "react-native-hinges@$version" version --json > "$RUNNER_TEMP/version.json" &&

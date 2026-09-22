@@ -51,6 +51,15 @@
   color: var(--rr-muted);
   overflow-wrap: anywhere;
 }
+.reanimatedNote {
+  max-width: 420px;
+  margin-top: 16px;
+  color: var(--rr-muted);
+  font-size: 0.88rem;
+}
+.reanimatedNote a {
+  font-weight: 600;
+}
 .preview {
   margin: 0;
   min-width: 0;
@@ -85,30 +94,50 @@
   border-radius: 23px;
   background: var(--ifm-background-color);
 }
+.hingeStage {
+  perspective: 900px;
+}
 .provider {
   height: 262px;
-  border: 1.5px solid #527ef0;
-  border-radius: 12px;
   position: relative;
-  background-image: radial-gradient(var(--rr-border) 0.7px, transparent 0.7px);
-  background-size: 12px 12px;
+  perspective: 900px;
+  transform-style: preserve-3d;
 }
 .origin {
   position: absolute;
   top: 10px;
   left: 10px;
+  z-index: 2;
+  padding: 2px 4px;
+  background: var(--ifm-background-color);
   font: 0.61rem var(--ifm-font-family-monospace);
   color: var(--ifm-color-primary);
 }
-.panes {
+.foldPanel {
   position: absolute;
-  inset: 65px 18px 20px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 42px;
-}
-.pane {
+  top: 0;
+  bottom: 0;
+  width: 50%;
   min-width: 0;
+  padding: 65px 18px 20px;
+  border: 1.5px solid #527ef0;
+  background-color: var(--ifm-background-color);
+  background-image: radial-gradient(var(--rr-border) 0.7px, transparent 0.7px);
+  background-size: 12px 12px;
+  transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: transform;
+}
+.leftPanel {
+  left: 0;
+  border-radius: 12px 0 0 12px;
+  transform: rotateY(var(--hinge-left-fold));
+  transform-origin: right center;
+}
+.rightPanel {
+  right: 0;
+  border-radius: 0 12px 12px 0;
+  transform: rotateY(var(--hinge-fold));
+  transform-origin: left center;
 }
 .stubTitle {
   background: var(--rr-border);
@@ -136,6 +165,7 @@
   left: 50%;
   border-left: 2px solid #d57839;
   background: #d5783915;
+  z-index: 1;
 }
 .fold span {
   position: absolute;
@@ -159,6 +189,28 @@
   padding: 2px 7px;
   font: 0.62rem var(--ifm-font-family-monospace);
   color: #6936a7;
+  z-index: 2;
+}
+.previewControls {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 0 25px 18px;
+  color: var(--rr-muted);
+  font-size: 0.68rem;
+}
+.previewControls label,
+.previewControls output {
+  font: 0.64rem var(--ifm-font-family-monospace);
+}
+.previewControls output {
+  color: #6936a7;
+}
+.previewControls input {
+  accent-color: var(--ifm-color-primary);
+  cursor: ew-resize;
+  min-width: 0;
 }
 .previewCaption {
   display: flex;
@@ -357,10 +409,19 @@
   .previewCaption {
     padding-left: 20px;
   }
-  .panes {
-    gap: 30px;
+  .previewControls {
+    grid-template-columns: 1fr auto;
+  }
+  .previewControls input {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
   .referenceLink {
     font-size: 0.76rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .foldPanel {
+    transition: none;
   }
 }

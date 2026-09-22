@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import CodeBlock from '@theme/CodeBlock';
@@ -15,10 +15,15 @@ for (const hinge of hinges) {
 }`;
 
 function HingePreview() {
+  const [angle, setAngle] = useState(Math.PI / 2);
+  const posture = angle < 0.35 ? 'closed' : angle > Math.PI - 0.35 ? 'fullyOpen' : 'partiallyOpen';
+  const angleLabel = `${angle.toFixed(2)} rad`;
+  const fold = ((Math.PI - angle) / 2).toFixed(3);
+
   return (
     <figure
       className={styles.preview}
-      aria-label="Illustration of two display panels joined by a hinge, with example posture and angle labels. These are illustrative, not live device readings."
+      aria-label="Illustrative hinge fold controls with example posture and angle labels. These are not live device readings."
     >
       <div className={styles.previewHeader}>
         <span className={styles.liveDot} />
@@ -26,29 +31,43 @@ function HingePreview() {
         <span className={styles.previewUnit}>rad</span>
       </div>
       <div className={styles.device}>
-        <div className={styles.provider}>
-          <span className={styles.origin}>partiallyOpen</span>
-          <div className={styles.panes}>
-            <div className={styles.pane}>
+        <div className={styles.hingeStage} style={{ '--hinge-fold': `${fold}rad`, '--hinge-left-fold': `-${fold}rad` }}>
+          <div className={styles.provider}>
+            <span className={styles.origin}>{posture}</span>
+            <div className={`${styles.foldPanel} ${styles.leftPanel}`}>
               <div className={styles.stubTitle} />
               <div className={styles.stub} />
               <div className={styles.stub} />
               <div className={styles.tile} />
             </div>
-            <div className={styles.pane}>
+            <div className={`${styles.foldPanel} ${styles.rightPanel}`}>
               <div className={styles.stubTitle} />
               <div className={styles.tile} />
               <div className={styles.stub} />
               <div className={styles.stub} />
             </div>
-          </div>
-          <div className={styles.fold}>
-            <span>hinge</span>
-          </div>
-          <div className={styles.angleTag}>
-            <span>1.57 rad</span>
+            <div className={styles.fold}>
+              <span>hinge</span>
+            </div>
+            <div className={styles.angleTag}>
+              <span>{angleLabel}</span>
+            </div>
           </div>
         </div>
+      </div>
+      <div className={styles.previewControls}>
+        <label htmlFor="hinge-angle">Illustrative fold angle</label>
+        <input
+          id="hinge-angle"
+          type="range"
+          min="0"
+          max={Math.PI}
+          step="0.01"
+          value={angle}
+          onChange={(event) => setAngle(Number(event.target.value))}
+          aria-valuetext={`${angleLabel}, ${posture}`}
+        />
+        <output htmlFor="hinge-angle">{angleLabel}</output>
       </div>
       <figcaption className={styles.previewCaption}>
         <span>
@@ -60,7 +79,7 @@ function HingePreview() {
         <span>
           <i className={styles.angleKey} /> Angle
         </span>
-        <small>Illustrative readings</small>
+        <small>Illustrative controls and readings</small>
       </figcaption>
     </figure>
   );
@@ -94,6 +113,9 @@ export default function Home() {
               </Link>
             </div>
             <p className={styles.packageName}>react-native-hinges</p>
+            <p className={styles.reanimatedNote}>
+              Animate from native hinge snapshots with <Link to="/docs/reanimated">the Reanimated integration</Link>.
+            </p>
           </div>
           <HingePreview />
         </section>

@@ -67,7 +67,7 @@ recording; tap it again to restore them. Hiding the controls also selects native
 
 The example installs `react-native-reserved-regions@0.1.0-alpha.2` from npm.
 
-[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v3.mp4). The 34-second video maps native Android emulator footage onto a [Galaxy Z Fold 3 model by RHModels](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model). The model follows the recorded native angle; continuous camera moves reveal the fold region and the toolbar switching tabs around camera clearance. Callouts fade in as each move settles. The video is stored as a release asset and included in the website deployment; video binaries stay outside the source tree. The recording uses local Hinges and example source after alpha.2, the example Worklets patch, and npm-installed reserved regions alpha.2. The illustrated device is not a physical-device recording.
+The example's local review render maps native Android emulator footage onto a [Galaxy Z Fold 3 model by RHModels](https://www.cgtrader.com/free-3d-models/electronics/phone/samsung-galaxy-z-fold-3-black-free-3d-model). The app viewport matches the model's display proportions. The model follows a lightly smoothed curve extracted from the recorded native angle; continuous camera moves reveal the fold region and the toolbar switching tabs around camera clearance. The fold-to-camera move takes two seconds. The illustrated phone is rendered at 60 fps; the app footage keeps its original cadence and native readings. The clean composition keeps the title, hinge angle, divider lines, and device, with no callout overlays or footer labels. The review render stays outside the repository and website deployment. The recording uses local Hinges and example source after alpha.2, the example Worklets patch, and npm-installed reserved regions alpha.2. The illustrated device is not a physical-device recording.
 
 ## Sensor Lab
 
@@ -84,7 +84,7 @@ and the animation separately:
 
 A sample's changes-per-second value is not animation FPS or a hardware sampling-rate guarantee. Use changing native input during a stall test. A preview animation continuing to move only verifies that generated animation.
 
-The example includes Reanimated 4.7.0 and Worklets 0.13.0. Its root is wrapped in `AnimatedHingesProvider`, so both screens read one shared value. See [the optional integration](./reanimated.md) for how that value is fed.
+The example includes Reanimated 4.7.0 and Worklets 0.13.0. Its screens call `useAnimatedHinges()` directly and share native observation for the React root. See [the optional integration](./reanimated.md) for how that value is fed.
 
 ## Native testing
 

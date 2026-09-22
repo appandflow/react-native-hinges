@@ -14,7 +14,31 @@ PODS:
   - hermes-engine (260318099.0.3):
     - hermes-engine/Pre-built (= 260318099.0.3)
   - hermes-engine/Pre-built (260318099.0.3)
-  - Hinges (0.1.0-alpha.2):
+  - Hinges (0.1.0-alpha.3):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - RNWorklets
+    - Yoga
+  - LiquidGlass (0.8.2):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2050,6 +2074,7 @@ DEPENDENCIES:
   - glog (from `build/rndeps-facades/glog`)
   - hermes-engine (from `../../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - Hinges (from `../..`)
+  - "LiquidGlass (from `../../node_modules/@callstack/liquid-glass`)"
   - RCT-Folly (from `build/rndeps-facades/RCT-Folly`)
   - RCTDeprecation (from `build/rncore-facades/RCTDeprecation`)
   - RCTRequired (from `build/rncore-facades/RCTRequired`)
@@ -2153,6 +2178,8 @@ EXTERNAL SOURCES:
     :tag: hermes-v260318099.0.2
   Hinges:
     :path: "../.."
+  LiquidGlass:
+    :path: "../../node_modules/@callstack/liquid-glass"
   RCT-Folly:
     :path: build/rndeps-facades/RCT-Folly
   RCTDeprecation:
@@ -2328,7 +2355,8 @@ SPEC CHECKSUMS:
   fmt: ba0886e864ebb21d14c98b2e12e164b8002f5b93
   glog: 3cf7cb46f743c4bc758ae3e6d9c15bd1b4cfd6d4
   hermes-engine: 7e5f90072b91f62ead9584eebdced74fa9c742a0
-  Hinges: 0aa917de16d8777f334ab5124fdc336180606e46
+  Hinges: 02e7219457e52d85a19532f52b8ad1e0ce4a7ec9
+  LiquidGlass: 90d4f92e7a6c8577f38515c30a3fe36d3c157760
   RCT-Folly: 82921e585c0400eda46fac1068297aa9dfb035e4
   RCTDeprecation: 791606bb67573791862d7af9a787878fefcf1aff
   RCTRequired: 57e3c3f5e7102529bf9a42348ff77153b01cfa0b

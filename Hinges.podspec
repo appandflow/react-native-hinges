@@ -13,8 +13,16 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/AppAndFlow/react-native-hinges.git", :tag => "#{s.version}" }
 
-  s.source_files = "ios/**/*.{h,m,mm,swift,cpp}"
-  s.private_header_files = "ios/**/*.h"
+  s.source_files = "ios/**/*.{h,m,mm,swift,cpp}", "cpp/**/*.{h,cpp}"
+  s.private_header_files = "ios/**/*.h", "cpp/**/*.h"
+
+  worklets_available = system("node", "-e",
+    "require.resolve('react-native-worklets/package.json', { paths: [process.argv[1]] })",
+    Pod::Config.instance.installation_root.to_s, :out => File::NULL, :err => File::NULL)
+  if worklets_available
+    s.dependency "RNWorklets"
+    s.pod_target_xcconfig = { "GCC_PREPROCESSOR_DEFINITIONS" => "$(inherited) HINGES_WORKLETS_ENABLED=1" }
+  end
 
   install_modules_dependencies(s)
 end

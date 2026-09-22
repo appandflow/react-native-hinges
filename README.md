@@ -4,10 +4,10 @@ Hinge posture and angle observations for React Native's New Architecture.
 
 ## Installation
 
-Install the functional `0.1.0-alpha.2` release:
+Install the `0.1.0-alpha.3` prerelease:
 
 ```sh
-npm install react-native-hinges@0.1.0-alpha.2
+npm install react-native-hinges@0.1.0-alpha.3
 ```
 
 Install iOS pods and rebuild your native app. This is an early alpha; see the
@@ -91,11 +91,12 @@ The optional `react-native-hinges/reanimated` entry point requires Reanimated
 the Worklets Babel plugin and rebuild native dependencies using
 [Reanimated's setup guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
 
-Wrap the consuming tree in `AnimatedHingesProvider`. It renders one hidden native
-view that observes hinges and delivers each update to Reanimated's UI runtime.
+Call `useAnimatedHinges()` inside a React Native root. It needs no provider or
+additional native view. Starting with `0.1.0-alpha.3`, remove the
+`AnimatedHingesProvider` wrapper used by `0.1.0-alpha.2` and rebuild the native app.
 
 ```tsx
-import { AnimatedHingesProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { useAnimatedHinges } from 'react-native-hinges/reanimated';
 import { useAnimatedStyle } from 'react-native-reanimated';
 
 function useHingeCardStyle() {
@@ -108,25 +109,19 @@ function useHingeCardStyle() {
     };
   });
 }
-
-export default function App() {
-  return (
-    <AnimatedHingesProvider>
-      <Screen />
-    </AnimatedHingesProvider>
-  );
-}
 ```
 
-The hook returns the provider's read-only-by-contract `SharedValue<readonly Hinge[]>`,
-seeded with `[]`. Read it inside worklets and do not write to it. It throws when
-rendered without the provider. Native events update the value on the UI runtime,
-preserving raw radians and nullable angles without JS delivery as an intermediate
-step. The library adds no smoothing or sampling-frequency guarantee.
+The hook returns a read-only-by-contract `SharedValue<readonly Hinge[]>`,
+seeded from the root's native cache or `[]` before its first reading. Each hook
+owns a shared value; consumers of the same root share native observation with
+the ordinary hook and explicit observers. Read it inside worklets and do not
+write to it. Native callbacks update it through Worklets' stable C++ API,
+preserving raw radians and nullable angles without a JavaScript-thread hop.
+The library adds no smoothing or sampling-frequency guarantee.
 
-Unmounting the provider removes its native view and ends that observation. An
-externally retained shared value keeps its last snapshot. See the
-[integration guide](website/docs/reanimated.md) for setup and compatibility limits.
+Unmounting releases the subscription. The last subscriber releases native
+observation and its cache; an externally retained shared value keeps its last
+snapshot. See the [integration guide](website/docs/reanimated.md).
 
 ## Native behavior
 
@@ -158,7 +153,7 @@ multiple-hinge hardware have not yet been validated.
 
 ## Example
 
-[Watch the folding Field Notes demo](https://appandflow.github.io/react-native-hinges/demo/fold-showcase-v3.mp4): native Android emulator footage mapped onto a Galaxy Z Fold 3 model. Hinge angles turn daylight into sunset and drive fades and slides; reserved regions keep the pages and toolbar clear of the fold and cutout. The example includes the Worklets patch described above.
+The Field Notes example uses native Android emulator footage mapped onto a Galaxy Z Fold 3 model. Hinge angles turn daylight into sunset and drive fades and slides; reserved regions keep the pages and toolbar clear of the fold and cutout. The example includes the Worklets patch described above. The review render is kept as a local artifact outside the repository and website deployment.
 
 ## Development
 

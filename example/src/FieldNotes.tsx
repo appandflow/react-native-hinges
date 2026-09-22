@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View, type LayoutRectangle } from 'react-native';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View, type LayoutRectangle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { ReservedRegionsProvider, useReservedRegions, useReservedRegionsReady } from 'react-native-reserved-regions';
 import { useHinges } from 'react-native-hinges';
 import { useAnimatedHinges } from 'react-native-hinges/reanimated';
@@ -78,56 +79,82 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
   }
   const usableSpaces = spaces.filter((space) => space.end - space.start >= 44);
   const totalSpace = usableSpaces.reduce((total, space) => total + space.end - space.start, 0);
-  let nextSection = 0;
-  const toolbar = usableSpaces.map((space, index) => {
-    const count =
-      index === usableSpaces.length - 1
-        ? sectionNames.length - nextSection
-        : Math.min(
-            sectionNames.length - nextSection,
-            Math.max(1, Math.round((sectionNames.length * (space.end - space.start)) / totalSpace)),
-          );
-    const items = sectionNames.slice(nextSection, nextSection + count);
-    nextSection += count;
-    return { ...space, items };
-  });
+  const toolbar = usableSpaces.reduce<Array<{ start: number; end: number; items: Section[] }>>(
+    (result, space, index) => {
+      const nextSection = result.reduce((count, group) => count + group.items.length, 0);
+      const count =
+        index === usableSpaces.length - 1
+          ? sectionNames.length - nextSection
+          : Math.min(
+              sectionNames.length - nextSection,
+              Math.max(1, Math.round((sectionNames.length * (space.end - space.start)) / totalSpace)),
+            );
+      return [...result, { ...space, items: sectionNames.slice(nextSection, nextSection + count) }];
+    },
+    [],
+  );
   const [section, setSection] = useState<Section>('Journal');
   const entry = sections[section];
-  const [tabLayouts, setTabLayouts] = useState<Partial<Record<Section, LayoutRectangle>>>({});
+  const [saved, setSaved] = useState<Partial<Record<Section, boolean>>>({});
+  const controlRegion = occlusions.reduce<(typeof occlusions)[number] | undefined>(
+    (rightmost, region) => (!rightmost || region.frame.x > rightmost.frame.x ? region : rightmost),
+    undefined,
+  );
+  const controlCenter = controlRegion ? controlRegion.frame.x + controlRegion.frame.width / 2 : viewportWidth - 38;
+  const controlsTop =
+    occlusions.reduce(
+      (bottom, { frame }) =>
+        frame.x < controlCenter + 26 && frame.x + frame.width > controlCenter - 26
+          ? Math.max(bottom, frame.y + frame.height)
+          : bottom,
+      headerHeight,
+    ) + 16;
+  const toolbarKey = JSON.stringify([headerHeight, toolbar]);
+  const [tabMeasurements, setTabMeasurements] = useState<{
+    key: string;
+    layouts: Partial<Record<Section, LayoutRectangle>>;
+  }>({ key: toolbarKey, layouts: {} });
+  const tabLayouts = tabMeasurements.key === toolbarKey ? tabMeasurements.layouts : {};
   const selectedLayout = tabLayouts[section];
+  const previousSelection = useRef({ section, toolbarKey });
   const reducedMotion = useReducedMotion();
   const selection = useSharedValue<LayoutRectangle>({ x: 0, y: 0, width: 0, height: 0 });
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!selectedLayout) return;
+    const previous = previousSelection.current;
+    const animate = !reducedMotion && previous.toolbarKey === toolbarKey && previous.section !== section;
     selection.set(
-      reducedMotion || selection.get().width === 0
-        ? selectedLayout
-        : withTiming(selectedLayout, { duration: 250, easing: Easing.bezier(0.77, 0, 0.175, 1) }),
+      animate
+        ? withTiming(selectedLayout, { duration: 250, easing: Easing.bezier(0.77, 0, 0.175, 1) })
+        : selectedLayout,
     );
-  }, [reducedMotion, selectedLayout, selection]);
+    previousSelection.current = { section, toolbarKey };
+  }, [previousSelection, reducedMotion, section, selectedLayout, selection, toolbarKey]);
   const selectionStyle = useAnimatedStyle(() => {
     const { x, y, width, height } = selection.get();
     return { width, height, transform: [{ translateX: x }, { translateY: y }] };
   });
   const [preview, setPreview] = useState(false);
-  const [controlsVisible, setControlsVisible] = useState(true);
+  const [controlsVisible, setControlsVisible] = useState(false);
   const [width, setWidth] = useState(0);
   return (
     <>
       <ScrollView
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
         style={styles.screen}
         contentContainerStyle={{
           paddingTop: headerHeight + 24,
           paddingBottom: insets.bottom + 24,
-          paddingLeft: insets.left + 24,
-          paddingRight: insets.right + 24,
+          paddingLeft: 24,
+          paddingRight: 24,
           gap: 20,
         }}
       >
         <View style={styles.introduction}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={controlsVisible ? 'Hide demo controls' : 'Show demo controls'}
+            accessibilityLabel={controlsVisible ? 'Hide developer controls' : 'Show developer controls'}
             onPress={() => {
               setControlsVisible(!controlsVisible);
               setPreview(false);
@@ -138,18 +165,12 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
           <View>
             <Text style={styles.heading}>{entry.title}</Text>
             <Text style={styles.subtitle}>{entry.subtitle}</Text>
-            {ready && occlusions.length > 0 && (
-              <Text style={styles.occlusionCaption}>RESERVED SPACE · CONTROLS CLEAR</Text>
-            )}
           </View>
         </View>
-        <ReservedRegionsProvider onLayout={(event) => setWidth(event.nativeEvent.layout.width)} style={styles.spread}>
+        <ReservedRegionsProvider onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
           <Spread width={width} preview={preview} section={section} />
         </ReservedRegionsProvider>
-        <HingeReadout preview={preview} />
-        <Text style={styles.description}>
-          Open a little. Let the light in. Your journal follows the fold, with room for every word.
-        </Text>
+        {controlsVisible && <HingeReadout preview={preview} />}
         {controlsVisible && (
           <View style={styles.row}>
             <Pressable
@@ -165,15 +186,69 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
             </Pressable>
           </View>
         )}
-        <Text style={styles.credit}>react-native-hinges + react-native-reserved-regions</Text>
       </ScrollView>
+      {Platform.OS === 'ios' && ready && controlRegion && (
+        <View
+          style={[
+            styles.floatingControls,
+            {
+              top: controlsTop,
+              right: Math.max(12, viewportWidth - controlCenter - 26),
+            },
+          ]}
+        >
+          <LiquidGlassView
+            interactive
+            colorScheme="dark"
+            style={[styles.glassControl, !isLiquidGlassSupported && styles.glassFallback]}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={saved[section] ? 'Unsave entry' : 'Save entry'}
+              accessibilityState={{ selected: !!saved[section] }}
+              onPress={() => setSaved((previous) => ({ ...previous, [section]: !previous[section] }))}
+              style={styles.glassButton}
+            >
+              <Text style={styles.saveGlyph}>{saved[section] ? '✓' : '+'}</Text>
+            </Pressable>
+          </LiquidGlassView>
+          <LiquidGlassView
+            colorScheme="dark"
+            style={[styles.glassControl, !isLiquidGlassSupported && styles.glassFallback]}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Previous entry"
+              onPress={() =>
+                setSection(
+                  sectionNames[(sectionNames.indexOf(section) + sectionNames.length - 1) % sectionNames.length]!,
+                )
+              }
+              style={styles.glassButton}
+            >
+              <View style={[styles.chevron, { transform: [{ rotate: '-45deg' }] }]} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Next entry"
+              onPress={() => setSection(sectionNames[(sectionNames.indexOf(section) + 1) % sectionNames.length]!)}
+              style={styles.glassButton}
+            >
+              <View style={[styles.chevron, { transform: [{ rotate: '135deg' }] }]} />
+            </Pressable>
+          </LiquidGlassView>
+        </View>
+      )}
+      <View pointerEvents="none" style={[styles.headerBackground, { height: headerHeight }]} />
       {ready &&
         toolbar.map((space, index) => (
           <View
-            key={index}
+            key={`${toolbarKey}:${index}`}
             style={[styles.header, { left: space.start, width: space.end - space.start, height: headerHeight }]}
           >
-            <Animated.View pointerEvents="none" style={[styles.selection, selectionStyle, { left: -space.start }]} />
+            {selectedLayout && (
+              <Animated.View pointerEvents="none" style={[styles.selection, selectionStyle, { left: -space.start }]} />
+            )}
             {index === 0 && space.end - space.start >= 148 + space.items.length * 84 && (
               <Text numberOfLines={1} style={styles.brand}>
                 FIELD NOTES
@@ -184,35 +259,32 @@ function FieldNotesContent({ viewportWidth, onOpenLab }: { viewportWidth: number
                 key={name}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: section === name }}
-                style={styles.tab}
+                style={[styles.tab, !selectedLayout && section === name && styles.selectedTab]}
                 onLayout={({ nativeEvent: { layout } }) => {
                   const next = { ...layout, x: space.start + layout.x };
-                  setTabLayouts((previous) => {
-                    const current = previous[name];
+                  setTabMeasurements((previous) => {
+                    const layouts = previous.key === toolbarKey ? previous.layouts : {};
+                    const current = layouts[name];
                     return current?.x === next.x &&
                       current.y === next.y &&
                       current.width === next.width &&
                       current.height === next.height
                       ? previous
-                      : { ...previous, [name]: next };
+                      : { key: toolbarKey, layouts: { ...layouts, [name]: next } };
                   });
                 }}
                 onPress={() => setSection(name)}
               >
-                <TabLabel name={name} layout={tabLayouts[name]} selection={selection} />
+                <TabLabel
+                  name={name}
+                  layout={selectedLayout ? tabLayouts[name] : undefined}
+                  selection={selection}
+                  selected={section === name}
+                />
               </Pressable>
             ))}
           </View>
         ))}
-      {occlusions.map(({ frame }, index) => (
-        <View
-          key={index}
-          pointerEvents="none"
-          accessible
-          accessibilityLabel={`Native occlusion bounds: x ${frame.x}, y ${frame.y}, width ${frame.width}, height ${frame.height}`}
-          style={[styles.occlusionOutline, { left: frame.x, top: frame.y, width: frame.width, height: frame.height }]}
-        />
-      ))}
     </>
   );
 }
@@ -221,16 +293,20 @@ function TabLabel({
   name,
   layout,
   selection,
+  selected,
 }: {
   name: Section;
   layout: LayoutRectangle | undefined;
   selection: SharedValue<LayoutRectangle>;
+  selected: boolean;
 }) {
   const style = useAnimatedStyle(() => {
     const { x, width } = selection.get();
     const overlap = layout
       ? Math.max(0, Math.min(x + width, layout.x + layout.width) - Math.max(x, layout.x)) / layout.width
-      : 0;
+      : selected
+        ? 1
+        : 0;
     return { color: interpolateColor(overlap, [0, 1], ['#c0cdb8', '#284031']) };
   });
   return (
@@ -273,8 +349,35 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
       region.frame.x + region.frame.width < width,
   );
   const seam = division?.frame;
-  const leftWidth = Math.max(0, (seam?.x ?? width / 2) - (seam ? 12 : 2));
+  const stacked = width < 500 && !seam;
+  const leftWidth = stacked ? width : Math.max(0, (seam?.x ?? width / 2) - (seam ? 12 : 2));
   const rightX = seam ? seam.x + seam.width + 12 : width / 2 + 2;
+
+  const pageLayout = useSharedValue({
+    leftWidth,
+    rightX: stacked ? 0 : rightX,
+    rightWidth: stacked ? width : Math.max(0, width - rightX),
+    rightTop: stacked ? 364 : 0,
+  });
+  const previousLayout = useRef({ width, stacked });
+  useLayoutEffect(() => {
+    const previous = previousLayout.current;
+    const animate = !reducedMotion && previous.width === width && previous.stacked === stacked;
+    const next = {
+      leftWidth,
+      rightX: stacked ? 0 : rightX,
+      rightWidth: stacked ? width : Math.max(0, width - rightX),
+      rightTop: stacked ? 364 : 0,
+    };
+    pageLayout.set(animate ? withTiming(next, { duration: 220 }) : next);
+    previousLayout.current = { width, stacked };
+  }, [leftWidth, pageLayout, reducedMotion, rightX, stacked, width]);
+  const leftPageStyle = useAnimatedStyle(() => ({ width: pageLayout.get().leftWidth }));
+  const rightPageStyle = useAnimatedStyle(() => ({
+    left: pageLayout.get().rightX,
+    top: pageLayout.get().rightTop,
+    width: pageLayout.get().rightWidth,
+  }));
 
   useEffect(() => {
     if (preview && !reducedMotion) {
@@ -286,53 +389,45 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
     }
     return () => cancelAnimation(previewAngle);
   }, [preview, previewAngle, reducedMotion]);
-  const angle = useDerivedValue(() =>
-    Math.max(0, Math.min(Math.PI, preview ? previewAngle.get() : (hinges.get()[0]?.angle ?? Math.PI))),
-  );
+  const angle = useDerivedValue(() => {
+    const target = Math.max(0, Math.min(Math.PI, preview ? previewAngle.get() : (hinges.get()[0]?.angle ?? Math.PI)));
+    return Platform.OS === 'android' && !preview && !reducedMotion
+      ? withTiming(target, { duration: 120, easing: Easing.linear })
+      : target;
+  });
+  const colorAngle = useDerivedValue(() => {
+    const progress = angle.get() / Math.PI;
+    return progress * progress * (3 - 2 * progress) * Math.PI;
+  });
   const landscapeStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#302b50', '#d18a80', '#abc9ba']),
+    backgroundColor: interpolateColor(colorAngle.get(), [0, Math.PI / 2, Math.PI], ['#302b50', '#d18a80', '#abc9ba']),
   }));
   const mountainFarStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#504366', '#a66e80', '#6b9380']),
+    backgroundColor: interpolateColor(colorAngle.get(), [0, Math.PI / 2, Math.PI], ['#504366', '#a66e80', '#6b9380']),
   }));
   const mountainNearStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#332c49', '#704858', '#345d4d']),
+    backgroundColor: interpolateColor(colorAngle.get(), [0, Math.PI / 2, Math.PI], ['#332c49', '#704858', '#345d4d']),
   }));
   const lakeStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#29263f', '#553f53', '#24473f']),
+    backgroundColor: interpolateColor(colorAngle.get(), [0, Math.PI / 2, Math.PI], ['#29263f', '#553f53', '#24473f']),
   }));
   const journalStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(angle.get(), [0, Math.PI], ['#b2ac92', '#f2ebd7']),
+    backgroundColor: interpolateColor(colorAngle.get(), [0, Math.PI], ['#b2ac92', '#f2ebd7']),
   }));
   const detailsStyle = useAnimatedStyle(() => {
-    const opacity = Math.max(0, Math.min(1, (angle.get() - (Math.PI * 4) / 9) / ((Math.PI * 4) / 9)));
+    const opacity = stacked ? 1 : Math.max(0, Math.min(1, (angle.get() - (Math.PI * 4) / 9) / ((Math.PI * 4) / 9)));
     return { opacity, transform: [{ translateX: reducedMotion ? 0 : (1 - opacity) * 64 }] };
   });
   const sunStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(angle.get(), [0, Math.PI / 2, Math.PI], ['#df7968', '#f4bd7e', '#f5edcb']),
+    backgroundColor: interpolateColor(colorAngle.get(), [0, Math.PI / 2, Math.PI], ['#df7968', '#f4bd7e', '#f5edcb']),
     transform: [{ translateY: reducedMotion ? 0 : (1 - angle.get() / Math.PI) * 50 }],
     opacity: 0.45 + (angle.get() / Math.PI) * 0.55,
   }));
   return (
-    <>
+    <View style={{ height: stacked ? 708 : 344 }}>
       {width > 0 && regionsReady && (
         <>
-          {seam && (
-            <View pointerEvents="none" style={styles.divisionGuide}>
-              <View
-                style={[
-                  styles.divisionMarker,
-                  {
-                    left: seam.x,
-                    top: seam.y,
-                    width: Math.max(StyleSheet.hairlineWidth, seam.width),
-                    height: seam.height,
-                  },
-                ]}
-              />
-            </View>
-          )}
-          <Animated.View style={[styles.page, styles.landscape, { width: leftWidth }, landscapeStyle]}>
+          <Animated.View style={[styles.page, styles.landscape, leftPageStyle, landscapeStyle]}>
             <Text style={styles.pageLabel}>A PLACE TO EXHALE</Text>
             <View pointerEvents="none" style={styles.landscapeArt}>
               <Animated.View style={[styles.sun, sunStyle]} />
@@ -345,8 +440,8 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
               <Text style={styles.location}>SAGUENAY / QUÉBEC</Text>
             </View>
           </Animated.View>
-          <Animated.View style={[styles.page, { left: rightX, width: Math.max(0, width - rightX) }, journalStyle]}>
-            <Text style={styles.journalLabel}>{entry.label}</Text>
+          <Animated.View style={[styles.page, rightPageStyle, journalStyle]}>
+            <Animated.Text style={[styles.journalLabel, detailsStyle]}>{entry.label}</Animated.Text>
             <Animated.View style={detailsStyle}>
               <Text style={styles.number}>{entry.number}</Text>
               <Text style={styles.journalTitle}>{entry.heading}</Text>
@@ -360,21 +455,27 @@ function Spread({ width, preview, section }: { width: number; preview: boolean; 
           </Animated.View>
         </>
       )}
-      <View style={styles.regionCaption}>
-        <Text style={styles.regionText}>
-          {!regionsReady
-            ? 'MEASURING REGIONS'
-            : division
-              ? 'TWO PAGES · NATIVE FOLD'
-              : 'REGIONS READY · NO PAGE DIVISION'}
-        </Text>
-      </View>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#172521' },
+  floatingControls: { position: 'absolute', gap: 12 },
+  glassControl: { width: 52, borderRadius: 26 },
+  glassFallback: { backgroundColor: '#273a32ee', borderWidth: 1, borderColor: '#ffffff30' },
+  glassButton: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
+  saveGlyph: { color: '#f0f2e8', fontSize: 28, fontWeight: '300' },
+  chevron: { width: 12, height: 12, borderTopWidth: 2, borderRightWidth: 2, borderColor: '#f0f2e8' },
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#172521',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#829c8d40',
+  },
   header: {
     position: 'absolute',
     top: 0,
@@ -382,10 +483,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#172521',
     gap: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#829c8d40',
   },
   tab: {
     flex: 1,
@@ -396,25 +494,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 8,
   },
+  selectedTab: { backgroundColor: '#edc278' },
   selection: { position: 'absolute', top: 0, borderRadius: 10, backgroundColor: '#edc278' },
   tabText: { color: '#c0cdb8', fontSize: 13, fontWeight: '600' },
-  occlusionOutline: {
-    position: 'absolute',
-    borderWidth: 2,
-    borderColor: '#edc278',
-    backgroundColor: '#edc27815',
-    boxShadow: '0 0 18px #edc27880',
-  },
-  occlusionCaption: { color: '#edc278', fontSize: 8, letterSpacing: 1.5, marginTop: 14 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
   brand: { marginRight: 16, flexShrink: 1, color: '#e9eddb', fontSize: 12, letterSpacing: 3, fontWeight: '700' },
   introduction: { gap: 12 },
   edition: { color: '#829c8d', fontSize: 8, letterSpacing: 1.2 },
   heading: { color: '#eef0e3', fontSize: 37, fontWeight: '500', letterSpacing: -1.8 },
   subtitle: { color: '#a6b7a6', fontSize: 13, lineHeight: 20, marginTop: 8 },
-  spread: { height: 376 },
-  divisionGuide: { position: 'absolute', left: 0, right: 0, top: 0, height: 344, overflow: 'hidden' },
-  divisionMarker: { position: 'absolute', backgroundColor: '#c3e1a0', opacity: 0.35 },
   page: { position: 'absolute', top: 0, height: 344, overflow: 'hidden', borderRadius: 12, padding: 17 },
   landscape: { left: 0 },
   landscapeArt: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, transform: [{ scaleX: -1 }] },
@@ -459,15 +547,12 @@ const styles = StyleSheet.create({
   journalBody: { color: '#53634c', fontSize: 12, lineHeight: 18 },
   journalFooter: { position: 'absolute', bottom: 17, left: 17, right: 17, gap: 4 },
   arrow: { color: '#294133', fontSize: 26 },
-  regionCaption: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
-  regionText: { color: '#829c8d', fontSize: 8, letterSpacing: 1.5 },
   badge: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#c3e1a0' },
   previewDot: { backgroundColor: '#edc278' },
   unavailableDot: { backgroundColor: '#819580' },
   badgeText: { color: '#c3d2b9', fontSize: 9, letterSpacing: 1.3 },
   volume: { color: '#819580', fontSize: 10, letterSpacing: 1.4 },
-  description: { color: '#c0cdb8', fontSize: 15, lineHeight: 23, maxWidth: 360 },
   button: { minHeight: 44, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 13, backgroundColor: '#d1e5b2' },
   buttonText: { color: '#284031', fontSize: 12, fontWeight: '600' },
   labButton: {
@@ -479,5 +564,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#edc278',
   },
   labText: { color: '#284031', fontSize: 12, fontWeight: '600' },
-  credit: { color: '#758b77', fontSize: 9, lineHeight: 15 },
 });

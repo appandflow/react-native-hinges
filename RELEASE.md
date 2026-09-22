@@ -74,6 +74,19 @@ its deployment branches/tags to release tags (`v*`). Verify these settings in
 GitHub; declaring `environment: release` in YAML does not create review rules.
 The npm trust relationship is also configured separately from the repository.
 
+## Alpha.3 distribution tags
+
+For `0.1.0-alpha.3`, the maintainer explicitly selected both `next` and `latest`.
+The trusted Release workflow publishes the prerelease to `next`. After that
+publish is verified, use an authenticated npm CLI to point `latest` at the same
+version, then verify both tags. npm trusted publishing currently does not
+support `npm dist-tag add`; do not add a long-lived CI token to work around it.
+
+```sh
+npm dist-tag add react-native-hinges@0.1.0-alpha.3 latest
+npm view react-native-hinges dist-tags --json
+```
+
 ## Prepare a candidate
 
 Start from reviewed, up-to-date `main`. Check the registry rather than assuming

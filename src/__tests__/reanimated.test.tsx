@@ -1,68 +1,62 @@
 import * as React from 'react';
 import { beforeEach, expect, it, jest } from '@jest/globals';
 import { act, create } from 'react-test-renderer';
+import { RootTagContext, type RootTag } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
-import { AnimatedHingesProvider, useAnimatedHinges } from '../reanimated';
+import { useAnimatedHinges } from '../reanimated';
 import type { Hinge } from '../index';
-import { Commands, type HingesObserverChangeEvent } from '../HingesObserverViewNativeComponent';
+import type { NativeHinge } from '../NativeHinges';
 
-const mockUIQueue: (() => void)[] = [];
-const mockRNQueue: (() => void)[] = [];
 jest.mock('react-native-worklets', () => ({
-  scheduleOnUI: (callback: () => void) => mockUIQueue.push(callback),
-  scheduleOnRN: (callback: () => void) => mockRNQueue.push(callback),
+  createSerializable: (callback: unknown) => callback,
+  getUIRuntimeHolder: () => ({}),
+  getUISchedulerHolder: () => ({}),
 }));
-function flushSetup() {
-  while (mockUIQueue.length) mockUIQueue.shift()?.();
-  while (mockRNQueue.length) mockRNQueue.shift()?.();
+jest.mock('react-native-reanimated', () => ({
+  makeMutable: <T,>(initial: T) => {
+    let current = initial;
+    return {
+      get: () => current,
+      set: (value: T) => {
+        current = value;
+      },
+    };
+  },
+}));
+const mockSnapshots = new Map<number, readonly NativeHinge[]>();
+jest.mock('../HingesModule', () => ({
+  __esModule: true,
+  default: { getSnapshot: (root: number) => ({ hinges: mockSnapshots.get(root) ?? [] }) },
+}));
+const listeners = new Map<number, Set<(readings: readonly NativeHinge[]) => void>>();
+const unsubscribe = jest.fn();
+const native = [{ status: 'partiallyOpen', angle: Math.PI / 2, hasAngle: true }];
+function emit(root: number, readings: readonly NativeHinge[]) {
+  mockSnapshots.set(root, readings);
+  listeners.get(root)?.forEach((callback) => callback(readings));
 }
-
-const mockWorkletHandlers = new Set<(event: HingesObserverChangeEvent) => void>();
-jest.mock('react-native-reanimated', () => {
-  const react = jest.requireActual<typeof React>('react');
-  return {
-    __esModule: true,
-    createAnimatedComponent: (component: unknown) => component,
-    useSharedValue: <T,>(initial: T) =>
-      react.useMemo(() => {
-        let current = initial;
-        return {
-          get: () => current,
-          set: (value: T) => {
-            current = value;
-          },
-        };
-      }, []),
-    useEvent: (handler: (event: HingesObserverChangeEvent) => void) =>
-      react.useMemo(() => {
-        mockWorkletHandlers.add(handler);
-        return handler;
-      }, []),
+function tree(root: number, child: React.ReactNode) {
+  return <RootTagContext.Provider value={root as unknown as RootTag}>{child}</RootTagContext.Provider>;
+}
+beforeEach(() => {
+  listeners.clear();
+  mockSnapshots.clear();
+  unsubscribe.mockClear();
+  globalThis.nativeHingesSubscribe = (root, _runtime, _scheduler, callback) => {
+    const listener = callback as unknown as (readings: readonly NativeHinge[]) => void;
+    const callbacks = listeners.get(root) ?? new Set();
+    listeners.set(root, callbacks);
+    callbacks.add(listener);
+    listener(mockSnapshots.get(root) ?? []);
+    return () => {
+      callbacks.delete(listener);
+      unsubscribe(root);
+    };
   };
 });
-jest.mock('../HingesModule', () => ({ __esModule: true, default: {} }));
-jest.mock('../HingesObserverViewNativeComponent', () => ({
-  __esModule: true,
-  default: 'HingesObserverView',
-  Commands: { refresh: jest.fn() },
-}));
 
-const mockNativeView = { id: 'hinges-observer-view' };
-function render(element: React.ReactElement) {
-  return create(element, { createNodeMock: () => mockNativeView });
-}
-function emit(hinges: HingesObserverChangeEvent['hinges']) {
-  for (const handler of mockWorkletHandlers) handler({ hinges });
-}
-
-beforeEach(() => {
-  mockWorkletHandlers.clear();
-  mockUIQueue.length = 0;
-  mockRNQueue.length = 0;
-  jest.clearAllMocks();
-});
-
-it('seeds an empty shared value, then updates it from native events without a React render', async () => {
+it('seeds the native cache and applies readings without a provider or React render', async () => {
+  mockSnapshots.set(1, native);
   let value: SharedValue<readonly Hinge[]> | undefined;
   let renders = 0;
   function Consumer() {
@@ -73,58 +67,80 @@ it('seeds an empty shared value, then updates it from native events without a Re
     });
     return null;
   }
-  await act(() => {
-    render(
-      <AnimatedHingesProvider>
-        <Consumer />
-      </AnimatedHingesProvider>,
-    );
-  });
-  expect(value?.get()).toEqual([]);
-
-  const previousRenders = renders;
-  emit([{ status: 'partiallyOpen', angle: Math.PI / 2, hasAngle: true }]);
-  expect(value?.get()).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
-  emit([{ status: 'future', angle: 123, hasAngle: false }]);
-  expect(value?.get()).toEqual([{ status: 'unknown', angle: null }]);
-  expect(renders).toBe(previousRenders);
-});
-
-it('requests the current snapshot only after the worklet registration hop', async () => {
-  await act(() => {
-    render(<AnimatedHingesProvider />);
-  });
-  expect(Commands.refresh).not.toHaveBeenCalled();
-  await act(flushSetup);
-  expect(Commands.refresh).toHaveBeenCalledWith(mockNativeView);
-});
-
-it('does not request a snapshot when unmounted before the hop completes', async () => {
   let renderer: ReturnType<typeof create>;
   await act(() => {
-    renderer = render(<AnimatedHingesProvider />);
+    renderer = create(tree(1, <Consumer />));
   });
+  expect(value?.get()).toEqual([{ status: 'partiallyOpen', angle: Math.PI / 2 }]);
+  const previousRenders = renders;
+  emit(2, [{ status: 'closed', angle: 0, hasAngle: true }]);
+  expect(value?.get()[0]?.angle).toBe(Math.PI / 2);
+  emit(1, [{ status: 'future', angle: 123, hasAngle: false }]);
+  expect(value?.get()).toEqual([{ status: 'unknown', angle: null }]);
+  expect(renders).toBe(previousRenders);
   await act(() => renderer.unmount());
-  await act(flushSetup);
-  expect(Commands.refresh).not.toHaveBeenCalled();
+  emit(1, native);
+  expect(value?.get()).toEqual([{ status: 'unknown', angle: null }]);
+  expect(unsubscribe).toHaveBeenCalledWith(1);
 });
 
-function OrphanConsumer() {
+it('isolates consumers and replaces the shared value when their root changes', async () => {
+  let first: SharedValue<readonly Hinge[]> | undefined;
+  let second: SharedValue<readonly Hinge[]> | undefined;
+  function First() {
+    const hinges = useAnimatedHinges();
+    React.useEffect(() => {
+      first = hinges;
+    });
+    return null;
+  }
+  function Second() {
+    const hinges = useAnimatedHinges();
+    React.useEffect(() => {
+      second = hinges;
+    });
+    return null;
+  }
+  let renderer: ReturnType<typeof create>;
+  const renderTree = (root: number) => (
+    <>
+      {tree(root, <First />)}
+      {tree(2, <Second />)}
+    </>
+  );
+  await act(() => {
+    renderer = create(renderTree(1));
+  });
+  emit(1, native);
+  expect(first?.get()).toHaveLength(1);
+  expect(second?.get()).toEqual([]);
+  const previous = first;
+  await act(() => renderer.update(renderTree(3)));
+  expect(unsubscribe).toHaveBeenCalledWith(1);
+  expect(first).not.toBe(previous);
+  expect(first?.get()).toEqual([]);
+  emit(1, [{ status: 'closed', angle: 0, hasAngle: true }]);
+  expect(first?.get()).toEqual([]);
+  expect(previous?.get()[0]?.angle).toBe(Math.PI / 2);
+  await act(() => renderer.unmount());
+  expect(unsubscribe).toHaveBeenCalledWith(2);
+  expect(unsubscribe).toHaveBeenCalledWith(3);
+});
+
+function EmptyConsumer() {
   useAnimatedHinges();
   return null;
 }
 
-it('throws a clear error when useAnimatedHinges renders outside the provider', () => {
+it('explains when the native app needs to be rebuilt with Worklets', () => {
+  globalThis.nativeHingesSubscribe = undefined;
   const error = jest.spyOn(console, 'error').mockImplementation(() => {});
   try {
     expect(() =>
       act(() => {
-        render(<OrphanConsumer />);
+        create(tree(1, <EmptyConsumer />));
       }),
-    ).toThrow(
-      'useAnimatedHinges must render inside an AnimatedHingesProvider from react-native-hinges/reanimated. ' +
-        'Wrap the tree in <AnimatedHingesProvider> at or above this component.',
-    );
+    ).toThrow('Install react-native-worklets and rebuild the native app');
   } finally {
     error.mockRestore();
   }

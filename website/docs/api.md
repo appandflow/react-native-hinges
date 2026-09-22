@@ -60,22 +60,14 @@ function createHingeObserver(rootTag: number | RootTag): HingeObserver;
 
 Creates an observer for an existing React root. Obtain its tag from React Native's `RootTagContext` or a native host integration. Creation reads the native cache once as a seed; `get()` returns the latest observed snapshot, and subscribing triggers a native replay of the current snapshot, with later updates arriving as native change events. The last native subscriber releases observation and the cache. See [observer usage](./observers.md).
 
-## AnimatedHingesProvider
-
-```tsx
-function AnimatedHingesProvider(props: { children?: ReactNode }): ReactNode;
-```
-
-Provides one shared value to its subtree and renders one hidden native `HingesObserverView` that observes hinges and emits changes to Reanimated's UI runtime. Requires the optional Reanimated and Worklets peers. Place it above every `useAnimatedHinges()` consumer; one provider per tree is enough.
-
-The view is `0x0`, absolutely positioned and not interactive, so it does not affect layout. Unmounting the provider removes it and ends that observation.
-
 ## useAnimatedHinges
 
 ```ts
 function useAnimatedHinges(): SharedValue<readonly Hinge[]>;
 ```
 
-Returns the enclosing provider's shared value, seeded with `[]` and updated on the UI runtime when the native view reports a change. Read with `get()` inside worklets and do not mutate it. Throws when rendered outside `AnimatedHingesProvider`.
+Returns this React root's hinge readings as a shared value. No provider or additional native view is needed. It seeds from the native cache or `[]` before the first reading, then updates directly on the UI runtime through Worklets. Read with `get()` inside worklets and do not mutate it. Requires the optional Reanimated and Worklets peers and a valid React Native root.
 
-Every consumer under one provider reads the same shared value. An externally retained shared value keeps its last snapshot after unmount. See [Reanimated integration](./reanimated.md).
+Each hook owns its shared value; consumers of the same root share native observation. Unmounting releases the subscription. An externally retained shared value keeps its last snapshot. See [Reanimated integration](./reanimated.md).
+
+Available starting with `0.1.0-alpha.3`. Remove the `AnimatedHingesProvider` wrapper when upgrading from `0.1.0-alpha.2`, then rebuild the native app.

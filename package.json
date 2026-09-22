@@ -1,6 +1,6 @@
 {
   "name": "react-native-hinges",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Hinge posture and angle observations for React Native",
   "keywords": [
     "android",
@@ -123,7 +123,7 @@
   "packageManager": "pnpm@12.5.1",
   "codegenConfig": {
     "name": "HingesSpec",
-    "type": "all",
+    "type": "modules",
     "jsSrcsDir": "src",
     "android": {
       "javaPackageName": "com.appandflow.hinges"
@@ -132,11 +132,6 @@
       "modules": {
         "NativeHinges": {
           "className": "HingesModule"
-        }
-      },
-      "components": {
-        "HingesObserverView": {
-          "className": "HingesObserverView"
         }
       }
     }

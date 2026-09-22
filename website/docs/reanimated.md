@@ -17,13 +17,13 @@ pnpm add react-native-reanimated@^4.7.0 react-native-worklets@^0.13.0
 
 For a React Native Community CLI app, add `react-native-worklets/plugin` last in the Babel plugins list, install iOS pods, and rebuild the native app. Preserve your existing presets and plugins. Follow the [official Reanimated setup instructions](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
 
-This integration is included in `0.1.0-alpha.2`. See [installation](./installation.md); the old `0.1.0-alpha.0` placeholder does not contain it.
+The provider-free integration is available starting with `0.1.0-alpha.3`. Remove `AnimatedHingesProvider` when upgrading from `0.1.0-alpha.2`, install pods, and rebuild the native app. See [installation](./installation.md).
 
 ## Use the hook
 
 ```tsx
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import { AnimatedHingesProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { useAnimatedHinges } from 'react-native-hinges/reanimated';
 
 function HingeCard() {
   const hinges = useAnimatedHinges();
@@ -39,19 +39,15 @@ function HingeCard() {
 }
 
 export default function App() {
-  return (
-    <AnimatedHingesProvider>
-      <HingeCard />
-    </AnimatedHingesProvider>
-  );
+  return <HingeCard />;
 }
 ```
 
 The example reads the first hinge and hides the card when its angle is unavailable. An app supporting several hinges must choose the appropriate observation; array order is not a stable hardware identity.
 
-`AnimatedHingesProvider` is required. It holds the shared value and renders the native view that feeds it, so `useAnimatedHinges()` throws when there is no provider above it. Every consumer under one provider reads the same shared value. The regular hook and explicit observers keep their own root-scoped native observation and do not need the provider.
+No provider or additional native view is needed. The hook reads `RootTagContext` to observe the calling React root. Each consumer owns a shared value, while all consumers of that root share native observation with the regular hook and explicit observers.
 
-The provider is independent of `RootTagContext`, so a test can render it without an `AppContainer`.
+Tests that render the hook outside React Native's `AppContainer` must supply a valid `RootTagContext`, just as for `useHinges()`.
 
 ## Shared-value contract
 
@@ -59,7 +55,7 @@ The provider is independent of `RootTagContext`, so a test can render it without
 function useAnimatedHinges(): SharedValue<readonly Hinge[]>;
 ```
 
-The shared value starts at `[]` and receives the provider view's first snapshot once it is mounted. Hinge status and raw radians have the same meaning as the ordinary API; unavailable angles remain `null`.
+The shared value is seeded from the root's native cache, or `[]` if no reading exists. Subscription installs the worklet callback before starting observation and replays the latest native snapshot. Hinge status and raw radians have the same meaning as the ordinary API; unavailable angles remain `null`.
 
 Read it with `get()` inside a worklet such as `useAnimatedStyle`. Treat the value as read-only even though the underlying Reanimated type exposes setters. Reading a shared value during React rendering is not supported; use the regular `useHinges()` hook for rendered text. See [Reanimated's shared-value guidance](https://docs.swmansion.com/react-native-reanimated/docs/core/useSharedValue/).
 
@@ -85,12 +81,14 @@ validate it themselves.
 
 ## How updates are delivered
 
-`AnimatedHingesProvider` renders one `HingesObserverView`, a Fabric component the library ships. The view is `0x0`, absolutely positioned and not interactive. On iOS it holds a `UIHingeInteraction`; on Android it observes the Activity window's folding features and the default hinge-angle sensor while attached. Each change is emitted as the component's own `onHingesChange` direct event, which Reanimated's `useEvent` handler receives on the UI runtime. This is the ordinary public path for a custom Fabric view event, so no private React Native or Reanimated type is involved.
+React Native's TurboModule JSI bindings register a serialized worklet and the UI runtime/scheduler holders. The library uses Worklets' stable C++ API to call that worklet from native hinge callbacks on the UI thread. No Fabric observer view, custom view event, or JavaScript-thread relay is involved.
 
-Reanimated registers a worklet event handler on the UI runtime asynchronously. After mount the provider therefore hops through `scheduleOnUI` and back with `scheduleOnRN` before sending the view's `refresh` command, which makes the view re-emit its current snapshot for the now-registered handler. Without that hop the first snapshot can be emitted before anything is listening.
+On iOS, `UIHingeInteraction` attaches to the calling React root. On Android, the observer resolves that root's Activity and combines WindowManager folding features with the default hinge-angle sensor. The native observation is shared with ordinary `useHinges()` and `createHingeObserver()` subscriptions for the same root.
+
+Worklets is an optional native dependency, detected during pod installation and Gradle configuration. Installing it after building the app requires a native rebuild. The core hook and observer continue to work without it.
 
 ## Lifetime and validation limits
 
-Unmounting the provider removes the native view, which ends its observation. An externally retained shared value keeps its last snapshot.
+Unmounting unsubscribes the callback. Queued deliveries for that subscription are ignored. Changing React roots creates a new shared value and releases the old root's subscription. The final subscriber releases native observation and its cache. An externally retained shared value keeps its last snapshot.
 
-The Android path has been tested on a `pixel_9_pro_fold` emulator, driving `hinge-angle0` from 45 to 180 degrees and reading the angle and status back from `useAnimatedHinges()`. The iOS path has been tested on an iPhone Duo simulator, which reports only a static closed hinge. Changing iOS angles, physical hardware, and first-frame availability are not established. A simulated-preview animation does not verify sensor delivery.
+The Android emulator check delivered 18 changing native readings to the UI runtime during a five-second JS stall, while an ordinary hook observed the same root. The iOS 27.1 Duo check confirmed the initial reading through both hooks; changing-angle delivery during a JS stall has not yet been verified there. Physical hardware, multiple-hinge devices, and first-frame availability require separate validation.

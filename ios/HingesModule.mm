@@ -1,6 +1,7 @@
 #import "HingesModule.h"
 
 #import "HingeInteraction.h"
+#include "../cpp/HingesWorklets.h"
 
 #import <React/RCTFabricSurface.h>
 #import <React/RCTSurfacePresenter.h>
@@ -23,6 +24,7 @@
   NSMutableDictionary<NSNumber *, HingeRootObservation *> *_observations;
   NSMutableDictionary<NSNumber *, NSArray<NSDictionary *> *> *_snapshots;
   std::atomic<bool> _invalidated;
+  std::shared_ptr<hinges::WorkletsBridge> _worklets;
   __weak RCTSurfacePresenter *_surfacePresenter;
 }
 
@@ -42,8 +44,18 @@
     _observations = [NSMutableDictionary new];
     _snapshots = [NSMutableDictionary new];
     _invalidated = false;
+    _worklets = std::make_shared<hinges::WorkletsBridge>();
   }
   return self;
+}
+
+- (void)installJSIBindingsWithRuntime:(facebook::jsi::Runtime &)runtime
+                          callInvoker:(const std::shared_ptr<facebook::react::CallInvoker> &)callInvoker
+{
+  __weak HingesModule *weakSelf = self;
+  _worklets->install(runtime,
+      [weakSelf](int rootTag) { [weakSelf startObserving:rootTag]; },
+      [weakSelf](int rootTag) { [weakSelf stopObserving:rootTag]; });
 }
 
 - (void)setSurfacePresenter:(RCTSurfacePresenter *)surfacePresenter
@@ -61,6 +73,12 @@
 - (void)emitSnapshotForRoot:(NSNumber *)rootTag hinges:(NSArray<NSDictionary *> *)hinges
 {
   if (_invalidated) return;
+  std::vector<hinges::HingeReading> readings;
+  readings.reserve(hinges.count);
+  for (NSDictionary *hinge in hinges) {
+    readings.push_back({[hinge[@"status"] UTF8String], [hinge[@"angle"] doubleValue], [hinge[@"hasAngle"] boolValue]});
+  }
+  _worklets->publish(rootTag.intValue, readings);
   [self emitOnHingesChange:@{@"rootTag": rootTag, @"hinges": hinges}];
 }
 
@@ -130,6 +148,7 @@
 - (void)invalidate
 {
   _invalidated = true;
+  _worklets->invalidate();
   RCTExecuteOnMainQueue(^{
     for (HingeRootObservation *observation in self->_observations.allValues) {
       if (observation.interaction != nil) {

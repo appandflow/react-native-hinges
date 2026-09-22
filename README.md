@@ -91,11 +91,12 @@ The optional `react-native-hinges/reanimated` entry point requires Reanimated
 the Worklets Babel plugin and rebuild native dependencies using
 [Reanimated's setup guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
 
-Wrap the consuming tree in `AnimatedHingesProvider`. It renders one hidden native
-view that observes hinges and delivers each update to Reanimated's UI runtime.
+Call `useAnimatedHinges()` inside a React Native root. It needs no provider or
+additional native view. This provider-free integration is unreleased; the
+published `0.1.0-alpha.2` still uses `AnimatedHingesProvider`.
 
 ```tsx
-import { AnimatedHingesProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { useAnimatedHinges } from 'react-native-hinges/reanimated';
 import { useAnimatedStyle } from 'react-native-reanimated';
 
 function useHingeCardStyle() {
@@ -108,25 +109,19 @@ function useHingeCardStyle() {
     };
   });
 }
-
-export default function App() {
-  return (
-    <AnimatedHingesProvider>
-      <Screen />
-    </AnimatedHingesProvider>
-  );
-}
 ```
 
-The hook returns the provider's read-only-by-contract `SharedValue<readonly Hinge[]>`,
-seeded with `[]`. Read it inside worklets and do not write to it. It throws when
-rendered without the provider. Native events update the value on the UI runtime,
-preserving raw radians and nullable angles without JS delivery as an intermediate
-step. The library adds no smoothing or sampling-frequency guarantee.
+The hook returns a read-only-by-contract `SharedValue<readonly Hinge[]>`,
+seeded from the root's native cache or `[]` before its first reading. Each hook
+owns a shared value; consumers of the same root share native observation with
+the ordinary hook and explicit observers. Read it inside worklets and do not
+write to it. Native callbacks update it through Worklets' stable C++ API,
+preserving raw radians and nullable angles without a JavaScript-thread hop.
+The library adds no smoothing or sampling-frequency guarantee.
 
-Unmounting the provider removes its native view and ends that observation. An
-externally retained shared value keeps its last snapshot. See the
-[integration guide](website/docs/reanimated.md) for setup and compatibility limits.
+Unmounting releases the subscription. The last subscriber releases native
+observation and its cache; an externally retained shared value keeps its last
+snapshot. See the [integration guide](website/docs/reanimated.md).
 
 ## Native behavior
 

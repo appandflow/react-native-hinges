@@ -1,17 +1,23 @@
 package com.appandflow.hinges
 
 import android.view.View
+import com.facebook.jni.HybridData
+import com.facebook.proguard.annotations.DoNotStrip
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.module.annotations.ReactModule
+import com.facebook.react.turbomodule.core.interfaces.BindingsInstallerHolder
+import com.facebook.react.turbomodule.core.interfaces.TurboModuleWithJSIBindings
 import com.facebook.react.uimanager.UIManagerHelper
 import java.util.concurrent.ConcurrentHashMap
 
 @ReactModule(name = HingesModule.NAME)
-class HingesModule(context: ReactApplicationContext) : NativeHingesSpec(context) {
+class HingesModule(context: ReactApplicationContext) :
+  NativeHingesSpec(context), TurboModuleWithJSIBindings {
   private val observations = mutableMapOf<Int, Observation>()
   private val snapshots = ConcurrentHashMap<Int, List<HingeState>>()
+  @field:DoNotStrip private val mHybridData: HybridData = initWorkletsBridge()
   @Volatile private var invalidated = false
 
   override fun getName() = NAME
@@ -58,6 +64,7 @@ class HingesModule(context: ReactApplicationContext) : NativeHingesSpec(context)
 
   override fun invalidate() {
     invalidated = true
+    invalidateWorkletsBridge()
     UiThreadUtil.runOnUiThread {
       observations.values.forEach { observation ->
         observation.root.removeOnAttachStateChangeListener(observation)
@@ -71,8 +78,27 @@ class HingesModule(context: ReactApplicationContext) : NativeHingesSpec(context)
 
   private fun emit(rootTag: Int, hinges: List<HingeState>) {
     if (invalidated) return
+    publishHinges(
+      rootTag,
+      Array(hinges.size) { hinges[it].status },
+      DoubleArray(hinges.size) { hinges[it].angle ?: 0.0 },
+      BooleanArray(hinges.size) { hinges[it].angle != null },
+    )
     emitOnHingesChange(payload(hinges).apply { putDouble("rootTag", rootTag.toDouble()) })
   }
+
+  @DoNotStrip external override fun getBindingsInstaller(): BindingsInstallerHolder
+
+  private external fun initWorkletsBridge(): HybridData
+
+  private external fun publishHinges(
+    rootTag: Int,
+    statuses: Array<String>,
+    angles: DoubleArray,
+    hasAngles: BooleanArray,
+  )
+
+  private external fun invalidateWorkletsBridge()
 
   private inner class Observation(val rootTag: Int, val root: View) : View.OnAttachStateChangeListener {
     var retainCount = 1
@@ -96,6 +122,10 @@ class HingesModule(context: ReactApplicationContext) : NativeHingesSpec(context)
   }
 
   companion object {
+    init {
+      com.facebook.soloader.SoLoader.loadLibrary("hingesworklets")
+    }
+
     const val NAME = "NativeHinges"
   }
 }

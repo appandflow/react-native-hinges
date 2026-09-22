@@ -23,7 +23,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { createHingeObserver, useHinges } from 'react-native-hinges';
-import { AnimatedHingesProvider, useAnimatedHinges } from 'react-native-hinges/reanimated';
+import { useAnimatedHinges } from 'react-native-hinges/reanimated';
 import { useHingeTelemetry } from './useHingeTelemetry';
 import { FieldNotes } from './FieldNotes';
 
@@ -215,23 +215,21 @@ function Choice({ label, selected, onPress }: { label: string; selected: boolean
 export default function App() {
   const [lab, setLab] = useState(false);
   return (
-    <AnimatedHingesProvider>
-      <SafeAreaProvider>
-        <StatusBar barStyle="light-content" />
-        <View style={styles.screen}>
-          {lab ? (
-            <>
-              <Playground />
-              <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setLab(false)}>
-                <Text style={styles.secondaryText}>Back to Field Notes</Text>
-              </Pressable>
-            </>
-          ) : (
-            <FieldNotes onOpenLab={() => setLab(true)} />
-          )}
-        </View>
-      </SafeAreaProvider>
-    </AnimatedHingesProvider>
+    <SafeAreaProvider>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.screen}>
+        {lab ? (
+          <>
+            <Playground />
+            <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setLab(false)}>
+              <Text style={styles.secondaryText}>Back to Field Notes</Text>
+            </Pressable>
+          </>
+        ) : (
+          <FieldNotes onOpenLab={() => setLab(true)} />
+        )}
+      </View>
+    </SafeAreaProvider>
   );
 }
 

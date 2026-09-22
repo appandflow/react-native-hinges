@@ -19,6 +19,10 @@ for (const required of [
   'Hinges.podspec',
   'ios/HingesModule.mm',
   'android/build.gradle',
+  'cpp/HingesWorklets.h',
+  'cpp/HingesWorklets.cpp',
+  'android/src/main/cpp/CMakeLists.txt',
+  'android/src/main/cpp/HingesWorkletsModule.cpp',
 ]) {
   if (!entries.includes(`package/${required}`)) throw new Error(`Missing package file: ${required}`);
 }

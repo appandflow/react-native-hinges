@@ -70,4 +70,4 @@ Returns this React root's hinge readings as a shared value. No provider or addit
 
 Each hook owns its shared value; consumers of the same root share native observation. Unmounting releases the subscription. An externally retained shared value keeps its last snapshot. See [Reanimated integration](./reanimated.md).
 
-This provider-free API is unreleased. Published `0.1.0-alpha.2` still requires `AnimatedHingesProvider`.
+Available starting with `0.1.0-alpha.3`. Remove the `AnimatedHingesProvider` wrapper when upgrading from `0.1.0-alpha.2`, then rebuild the native app.

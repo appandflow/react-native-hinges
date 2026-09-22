@@ -7,10 +7,10 @@ description: Try the native hinge API and check platform requirements.
 
 ## Install the alpha
 
-Install the functional `0.1.0-alpha.2` release:
+Install the `0.1.0-alpha.3` prerelease:
 
 ```sh
-npm install react-native-hinges@0.1.0-alpha.2
+npm install react-native-hinges@0.1.0-alpha.3
 ```
 
 Install iOS pods and rebuild the native app. The explicit version above avoids the old `0.1.0-alpha.0` name-reservation placeholder. This alpha's supported test configuration and limitations are listed below. [Run the example](./example.md) to explore native and animated readings.

@@ -4,10 +4,10 @@ Hinge posture and angle observations for React Native's New Architecture.
 
 ## Installation
 
-Install the functional `0.1.0-alpha.2` release:
+Install the `0.1.0-alpha.3` prerelease:
 
 ```sh
-npm install react-native-hinges@0.1.0-alpha.2
+npm install react-native-hinges@0.1.0-alpha.3
 ```
 
 Install iOS pods and rebuild your native app. This is an early alpha; see the
@@ -92,8 +92,8 @@ the Worklets Babel plugin and rebuild native dependencies using
 [Reanimated's setup guide](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
 
 Call `useAnimatedHinges()` inside a React Native root. It needs no provider or
-additional native view. This provider-free integration is unreleased; the
-published `0.1.0-alpha.2` still uses `AnimatedHingesProvider`.
+additional native view. Starting with `0.1.0-alpha.3`, remove the
+`AnimatedHingesProvider` wrapper used by `0.1.0-alpha.2` and rebuild the native app.
 
 ```tsx
 import { useAnimatedHinges } from 'react-native-hinges/reanimated';

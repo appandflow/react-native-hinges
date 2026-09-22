@@ -14,7 +14,7 @@ PODS:
   - hermes-engine (260318099.0.3):
     - hermes-engine/Pre-built (= 260318099.0.3)
   - hermes-engine/Pre-built (260318099.0.3)
-  - Hinges (0.1.0-alpha.2):
+  - Hinges (0.1.0-alpha.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2355,7 +2355,7 @@ SPEC CHECKSUMS:
   fmt: ba0886e864ebb21d14c98b2e12e164b8002f5b93
   glog: 3cf7cb46f743c4bc758ae3e6d9c15bd1b4cfd6d4
   hermes-engine: 7e5f90072b91f62ead9584eebdced74fa9c742a0
-  Hinges: 0caf256668e211eedfd5909b443dd4ca452370cc
+  Hinges: 02e7219457e52d85a19532f52b8ad1e0ce4a7ec9
   LiquidGlass: 90d4f92e7a6c8577f38515c30a3fe36d3c157760
   RCT-Folly: 82921e585c0400eda46fac1068297aa9dfb035e4
   RCTDeprecation: 791606bb67573791862d7af9a787878fefcf1aff

@@ -17,7 +17,7 @@ pnpm add react-native-reanimated@^4.7.0 react-native-worklets@^0.13.0
 
 For a React Native Community CLI app, add `react-native-worklets/plugin` last in the Babel plugins list, install iOS pods, and rebuild the native app. Preserve your existing presets and plugins. Follow the [official Reanimated setup instructions](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/getting-started/).
 
-The provider-free integration described here is unreleased. Published `0.1.0-alpha.2` uses `AnimatedHingesProvider`; its API changes when upgrading to this version. See [installation](./installation.md).
+The provider-free integration is available starting with `0.1.0-alpha.3`. Remove `AnimatedHingesProvider` when upgrading from `0.1.0-alpha.2`, install pods, and rebuild the native app. See [installation](./installation.md).
 
 ## Use the hook
 
